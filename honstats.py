@@ -1,8 +1,13 @@
+#!/usr/bin/env python3
+import sys
+import os
 import argparse
 import urllib.request
 import json
+import configparser
 
-token=""
+"""honstats console statistics program for Heroes of Newerth
+"""
 
 def nickoraccountid(id):
     try:
@@ -17,7 +22,7 @@ def fetchdata(url):
 
 def playercommand(args):
     for id in args.id:
-        url = args.host + '/player_statistics/' + args.statstype + nickoraccountid(id) + '/?token=' + token
+        url = args.host + '/player_statistics/' + args.statstype + nickoraccountid(id) + '/?token=' + args.token
         print(url)
         data = fetchdata(url)
         print(json.dumps(data))
@@ -28,7 +33,7 @@ def playercommand(args):
     
 def matchescommand(args):
     for id in args.id:
-        url = args.host + '/match_history/' + args.statstype + nickoraccountid(id) + '/?token=' + token
+        url = args.host + '/match_history/' + args.statstype + nickoraccountid(id) + '/?token=' + args.token
         print(url)
         data = fetchdata(url)
         print(json.dumps(data))
@@ -37,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
     #parser.add_argument('--host', default='http://api.heroesofnewerth.com', help='statistic host provider')
     parser.add_argument('--host', default='http://localhost:1234', help='statistic host provider')
+    parser.add_argument('-t', '--token', help="hon statistics token")
     parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'], default='ranked', help='Statstype to show')
     #parser.set_defaults(func=None)
     
@@ -50,6 +56,18 @@ def main():
     matchescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
     
     args = parser.parse_args()
+    
+    if not args.token:
+        # read token from config file
+        configpath = '/etc/honstats'
+        if not os.path.exists(configpath):
+            configpath = os.path.expanduser('~/.config/honstats/config')
+            if not os.path.exists(configpath):
+                sys.exit('Token not specified and now config file found.')
+        cp = configparser.ConfigParser()
+        cp.read(configpath)
+        args.token = cp.get('auth', 'token')
+    
     if 'func' in args:
         args.func(args)
     else:
