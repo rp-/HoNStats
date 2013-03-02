@@ -29,18 +29,47 @@ class FSDataProvider(DataProvider):
         with open(os.path.join(self.url, path)) as fd:
             return json.load(fd)
 
-def nickoraccountid(id):
-    try:
-        int(id)
-        return '/accountid/' + id
-    except ValueError:
-        return '/nickname/' + id
+class Stats(object):
+    DefaultStatsType = 'ranked'
 
-def playercommand(args):
-    headerformat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wp:<2s}"
-    playerformat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wp:2.0f}"
+class Player(object):
+    StatsMapping = { 'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
+    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wp:<2s}"
+    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wp:2.0f}"
 
-    print(headerformat.format(nick="Nick",
+    def __init__(self, nickname, data):
+        self.nickname = nickname
+        self.data = data
+
+    def rating(self, type = Stats.DefaultStatsType):
+        if 'public' != type:
+            return int(float(self.data[self.StatsMapping[type] + '_amm_team_rating']))
+        return int(float(self.data['acc_pub_skill']))
+
+    def kills(self, type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_herokills'])
+
+    def deaths(self, type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_deaths'])
+
+    def assists(self,  type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_heroassists'])
+
+    def gamesplayed(self, type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_games_played'])
+
+    def wards(self, type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_wards'])
+
+    def denies(self, type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_denies'])
+
+    def wins(self, type = Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type] + '_wins'])
+
+    @staticmethod
+    def header(type=Stats.DefaultStatsType):
+        return Player.HeaderFormat.format(nick="Nick",
                               mmr="MMR",
                               k="K",
                               d="D",
@@ -49,28 +78,41 @@ def playercommand(args):
                               cd="CD",
                               kdr="KDR",
                               gp="GP",
-                              wp="W%"))
+                              wp="W%")
 
-    statsmapping = { 'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
-    prefix = statsmapping[args.statstype]
+    @staticmethod
+    def nickoraccountid(id):
+        try:
+            int(id)
+            return '/accountid/' + id
+        except ValueError:
+            return '/nickname/' + id
+
+    def str(self, type=Stats.DefaultStatsType):
+        return Player.PlayerFormat.format(nick=self.nickname,
+                          rank=self.rating(type),
+                          k=self.kills(type),
+                          d=self.deaths(type),
+                          a=self.assists(type),
+                          wg=self.wards(type)/self.gamesplayed(type),
+                          cd=self.denies(type)/self.gamesplayed(type),
+                          kdr=self.kills(type)/self.deaths(type),
+                          pg=self.gamesplayed(type),
+                          wp=self.wins(type)/self.gamesplayed(type)*100)
+
+def playercommand(args):
+    print(Player.header())
+
     for id in args.id:
         #print(url)
-        data = dp.fetch('player_statistics/' + args.statstype + nickoraccountid(id))
+        data = dp.fetch('player_statistics/' + args.statstype + Player.nickoraccountid(id))
+        player = Player(id, data)
         #print(json.dumps(data))
-        print(playerformat.format(nick=id,
-                                  rank=int(float(data[prefix + '_amm_team_rating'])),
-                                  k=int(data[prefix + '_herokills']),
-                                  d=int(data[prefix + '_deaths']),
-                                  a=int(data[prefix + '_heroassists']),
-                                  wg=int(data[prefix + '_wards'])/int(data[prefix + '_games_played']),
-                                  cd=int(data[prefix + '_denies'])/int(data[prefix + '_games_played']),
-                                  kdr=int(data[prefix + '_herokills'])/int(data[prefix + '_deaths']),
-                                  pg=int(data[prefix + '_games_played']),
-                                  wp=int(data[prefix + '_wins'])/int(data[prefix + '_games_played'])*100))
+        print(player.str(args.statstype))
 
 def matchescommand(args):
     for id in args.id:
-        path = 'match_history/' + args.statstype + nickoraccountid(id)
+        path = 'match_history/' + args.statstype + Player.nickoraccountid(id)
         data = dp.fetch(path)
         print(json.dumps(data))
 
@@ -112,8 +154,8 @@ def main():
 
     if 'func' in args:
         global dp
-        dp = FSDataProvider() #development url
-        #dp = HttpDataProvider(args.host, token=args.token)
+        #dp = FSDataProvider() #development url
+        dp = HttpDataProvider(args.host, token=args.token)
         args.func(args)
     else:
         parser.print_help()
