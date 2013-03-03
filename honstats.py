@@ -3,23 +3,76 @@ import sys
 import os
 import argparse
 import urllib.request
+from urllib.error import HTTPError
 import json
 import configparser
+import gzip
+import time
 
 """honstats console statistics program for Heroes of Newerth
 """
 dp = None
 
-class DataProvider(object): pass
+class DataProvider(object):
+    MatchCacheDir = 'match'
+    PlayerCacheDir = 'player'
 
 class HttpDataProvider(DataProvider):
-    def __init__(self, url = 'http://api.heroesofnewerth.com/', token=None):
+    def __init__(self, url = 'http://api.heroesofnewerth.com/', token=None, cachedir=None):
         self.url = url
         self.token = token
+        self.cachedir = os.path.abspath(os.path.expanduser(cachedir))
+        if self.cachedir:
+            os.makedirs(os.path.join(self.cachedir, DataProvider.MatchCacheDir), exist_ok=True)
+            os.makedirs(os.path.join(self.cachedir, DataProvider.PlayerCacheDir), exist_ok=True)
 
     def fetch(self, path):
-        resp = urllib.request.urlopen(self.url + path + "/?token=" + self.token)
+        url = self.url + path + "/?token=" + self.token
+        #print(url)
+        try:
+            resp = urllib.request.urlopen(url)
+        except HTTPError as e:
+            if e.code == 429: #too much requests
+                time.sleep(0.1) # this might be a bit harsh, but fetch until we get what we want
+                return self.fetch(path)
+            raise e
         return json.loads(resp.read().decode('utf-8'))
+
+    def fetchmatches(self, id, statstype):
+        playerdir = os.path.join(self.cachedir,  DataProvider.PlayerCacheDir)
+        #TODO: make sure id is the accountid
+        #TODO: only cache for a certain time 10mins?
+        playermatches = os.path.join(playerdir, "{id}_matches.{statstype}".format(id=id, statstype=statstype))
+        if os.path.exists(playermatches):
+            with gzip.open(playermatches, 'rt') as f:
+                data = json.load(f)
+        else:
+            path = 'match_history/' + statstype + Player.nickoraccountid(id)
+            data = dp.fetch(path)
+            with gzip.open(playermatches,'wt+') as f:
+                f.write(json.dumps(data))
+        return data
+
+    def fetchmatch(self, matchid):
+        """Fetches match data by id and caches it onto disk
+           First checks if the match stats are already cached
+        """
+        matchdir = os.path.join(self.cachedir,  DataProvider.MatchCacheDir)
+        matchpath = os.path.join(matchdir, matchid[0:4])
+        os.makedirs(matchpath, exist_ok=True)
+        matchpath = os.path.join(matchpath, matchid)
+        if os.path.exists(matchpath):
+            with gzip.open(matchpath, 'rt') as f:
+                data = json.load(f)
+        else:
+            data = self.fetch('match/summ/matchid/{id}'.format(id=matchid))
+            matchstats = self.fetch('match/all/matchid/{id}'.format(id=matchid))
+            data.append(matchstats[0][0]) # settings
+            data.append(matchstats[1]) # items
+            data.append(matchstats[2]) # player stats
+            with gzip.open(matchpath, 'wt+') as f:
+                f.write(json.dumps(data))
+        return Match(data)
 
 class FSDataProvider(DataProvider):
     def __init__(self, url = './sampledata'):
@@ -100,6 +153,13 @@ class Player(object):
                           pg=self.gamesplayed(type),
                           wp=self.wins(type)/self.gamesplayed(type)*100)
 
+class Match(object):
+    def __init__(self, data):
+        self.data = data
+
+    def str(self):
+        return self.data[0]['match_id']
+
 def playercommand(args):
     print(Player.header())
 
@@ -112,9 +172,17 @@ def playercommand(args):
 
 def matchescommand(args):
     for id in args.id:
-        path = 'match_history/' + args.statstype + Player.nickoraccountid(id)
-        data = dp.fetch(path)
-        print(json.dumps(data))
+        data = dp.fetchmatches(id, args.statstype)
+        history = ""
+        if len(data) > 0:
+            history = data[0]['history']
+        hist = history.split(',')
+        limit = args.limit if args.limit else len(hist)
+        for i in range(limit):
+            matchid, _, date = hist[i].split('|')
+            match = dp.fetchmatch(matchid)
+            print(match.str())
+        #print(json.dumps(history))
 
 def matchcommand(args):
     print(args)
@@ -133,6 +201,7 @@ def main():
 
     matchescmd = subparsers.add_parser('matches', help='Show matches of a player(s)')
     matchescmd.set_defaults(func=matchescommand)
+    matchescmd.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     matchescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
 
     matchescmd = subparsers.add_parser('match', help='Show stats for match(es)')
@@ -141,21 +210,24 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.token:
-        # read token from config file
-        configpath = '/etc/honstats'
-        if not os.path.exists(configpath):
-            configpath = os.path.expanduser('~/.config/honstats/config')
-            if not os.path.exists(configpath):
-                sys.exit('Token not specified and now config file found.')
+    configpath = '/etc/honstats'
+    if not os.path.exists(configpath):
+        configpath = os.path.expanduser('~/.config/honstats/config')
+    if os.path.exists(configpath):
         cp = configparser.ConfigParser()
         cp.read(configpath)
+    else:
+        cp = {}
+
+    if not args.token and not 'auth' in cp:
+        sys.exit('Token not specified and no config file found.')
+    else:
         args.token = cp.get('auth', 'token')
 
     if 'func' in args:
         global dp
         #dp = FSDataProvider() #development url
-        dp = HttpDataProvider(args.host, token=args.token)
+        dp = HttpDataProvider(args.host, token=args.token,  cachedir=cp.get('cache', 'directory'))
         args.func(args)
     else:
         parser.print_help()
