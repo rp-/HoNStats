@@ -8,10 +8,19 @@ import json
 import configparser
 import gzip
 import time
+import sqlite3
+import datetime
 
 """honstats console statistics program for Heroes of Newerth
 """
 dp = None
+
+DBCREATE = """
+CREATE TABLE player (
+id  INTEGER PRIMARY KEY,
+nick TEXT
+)
+"""
 
 class DataProvider(object):
     MatchCacheDir = 'match'
@@ -23,8 +32,32 @@ class HttpDataProvider(DataProvider):
         self.token = token
         self.cachedir = os.path.abspath(os.path.expanduser(cachedir))
         if self.cachedir:
+            dbfile = os.path.join(self.cachedir, 'stats.db')
+            create = not os.path.exists(dbfile)
+            self.db = sqlite3.connect(os.path.join(self.cachedir, 'stats.db'))
+            if create:
+                self.db.execute(DBCREATE)
+
             os.makedirs(os.path.join(self.cachedir, DataProvider.MatchCacheDir), exist_ok=True)
             os.makedirs(os.path.join(self.cachedir, DataProvider.PlayerCacheDir), exist_ok=True)
+
+    def __del__(self):
+        self.db.close()
+
+    def nick2id(self, nick):
+        cursor = self.db.cursor()
+        cursor.execute("SELECT id from player WHERE nick = :nick", { 'nick': nick})
+        row = cursor.fetchone()
+        if row:
+            return int(row[0])
+        cursor.close()
+        data = dp.fetch('player_statistics/ranked/nickname/' + nick)
+        self.db.execute('INSERT INTO player VALUES( :id, :nick );',  {'id': int(data['account_id']), 'nick': nick})
+        self.db.commit()
+        return int(data['account_id'])
+
+    def id2nick(self, id):
+        return id
 
     def fetch(self, path):
         url = self.url + path + "/?token=" + self.token
@@ -40,10 +73,8 @@ class HttpDataProvider(DataProvider):
 
     def fetchmatches(self, id, statstype):
         playerdir = os.path.join(self.cachedir,  DataProvider.PlayerCacheDir)
-        #TODO: make sure id is the accountid
-        #TODO: only cache for a certain time 10mins?
-        playermatches = os.path.join(playerdir, "{id}_matches.{statstype}".format(id=id, statstype=statstype))
-        if os.path.exists(playermatches):
+        playermatches = os.path.join(playerdir, "{id}_matches.{statstype}".format(id=dp.nick2id(id), statstype=statstype))
+        if os.path.exists(playermatches) and os.stat(playermatches).st_ctime > time.time() - Stats.CacheTime:
             with gzip.open(playermatches, 'rt') as f:
                 data = json.load(f)
         else:
@@ -58,9 +89,9 @@ class HttpDataProvider(DataProvider):
            First checks if the match stats are already cached
         """
         matchdir = os.path.join(self.cachedir,  DataProvider.MatchCacheDir)
-        matchpath = os.path.join(matchdir, matchid[0:4])
+        matchpath = os.path.join(matchdir, str(matchid)[0:4])
         os.makedirs(matchpath, exist_ok=True)
-        matchpath = os.path.join(matchpath, matchid)
+        matchpath = os.path.join(matchpath, str(matchid))
         if os.path.exists(matchpath):
             with gzip.open(matchpath, 'rt') as f:
                 data = json.load(f)
@@ -84,6 +115,7 @@ class FSDataProvider(DataProvider):
 
 class Stats(object):
     DefaultStatsType = 'ranked'
+    CacheTime = 60 * 5
 
 class Player(object):
     StatsMapping = { 'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
@@ -154,11 +186,70 @@ class Player(object):
                           wp=self.wins(type)/self.gamesplayed(type)*100)
 
 class Match(object):
+    MatchesHeader = "{mid:10s} {gt:2s} {gd:7s} {date:19s} {k:>2s} {d:>2s} {a:>2s} {hero:4s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
+    MatchesFormat = "{mid:<10d} {gt:2s} {gd:7s} {date:17s} {k:2d} {d:2d} {a:2d} {hero:4s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
+
     def __init__(self, data):
         self.data = data
 
+    @staticmethod
+    def headermatches():
+        return Match.MatchesHeader.format(mid="MID",
+                                          gt="GT",
+                                          gd="GD",
+                                          date="Date",
+                                          k="K",
+                                          d="D",
+                                          a="A",
+                                          hero="Hero",
+                                          wl="W/L",
+                                          wa="Wa",
+                                          ck="CK",
+                                          cd="CD",
+                                          gpm="GPM")
+
+    def gametype(self):
+        options = self.data[1]
+        if int(options['ap']) > 0:
+            return "AP"
+        if int(options['ar']) > 0:
+            return "AR"
+        return "SD"
+
+    def playermatchstats(self, id):
+        playerstats = self.data[3]
+        for stats in playerstats:
+            if int(id) == int(stats['account_id']):
+                return stats
+        return None
+
+    def playerstat(self, id, stat):
+        stats = self.playermatchstats(id)
+        return int(stats[stat])
+
+    def gameduration(self):
+        return datetime.timedelta(seconds=int(self.data[0]['time_played']))
+
+    def matchesstr(self, id):
+        matchsum = self.data[0]
+        return Match.MatchesFormat.format(mid=int(matchsum['match_id']),
+            gt=self.gametype(),
+            gd=self.gameduration(),
+            date=matchsum['mdt'],
+            k=self.playerstat(id, 'herokills'),
+            d=self.playerstat(id, 'deaths'),
+            a=self.playerstat(id, 'heroassists'),
+            hero=str(self.playerstat(id, 'hero_id')),
+            wl="W" if int(self.playerstat(id, 'wins')) > 0 else "L",
+            wa=self.playerstat(id, 'wards'),
+            ck=self.playerstat(id, 'teamcreepkills') + self.playerstat(id, 'neutralcreepkills'),
+            cd=self.playerstat(id, 'denies'),
+            gpm=int(self.playerstat(id, 'gold') / (self.gameduration().total_seconds()/60)))
+
     def str(self):
         return self.data[0]['match_id']
+
+
 
 def playercommand(args):
     print(Player.header())
@@ -178,10 +269,14 @@ def matchescommand(args):
             history = data[0]['history']
         hist = history.split(',')
         limit = args.limit if args.limit else len(hist)
+        matchids = [ int(x.split('|')[0]) for  x in hist ]
+        matchids = sorted(matchids, reverse=True)
+
+        print(dp.id2nick(id))
+        print(Match.headermatches())
         for i in range(limit):
-            matchid, _, date = hist[i].split('|')
-            match = dp.fetchmatch(matchid)
-            print(match.str())
+            match = dp.fetchmatch(matchids[i])
+            print(match.matchesstr(dp.nick2id(id)))
         #print(json.dumps(history))
 
 def matchcommand(args):
