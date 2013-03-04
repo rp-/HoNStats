@@ -9,7 +9,7 @@ import configparser
 import gzip
 import time
 import sqlite3
-import datetime
+from datetime import datetime, timedelta, tzinfo
 
 """honstats console statistics program for Heroes of Newerth
 """
@@ -27,6 +27,46 @@ name TEXT
 );
 """
 
+# A class capturing the platform's idea of local time.
+
+import time as _time
+
+STDOFFSET = timedelta(seconds = -_time.timezone)
+if _time.daylight:
+    DSTOFFSET = timedelta(seconds = -_time.altzone)
+else:
+    DSTOFFSET = STDOFFSET
+
+DSTDIFF = DSTOFFSET - STDOFFSET
+ZERO = timedelta(0)
+
+class LocalTimezone(tzinfo):
+
+    def utcoffset(self, dt):
+        if self._isdst(dt):
+            return DSTOFFSET
+        else:
+            return STDOFFSET
+
+    def dst(self, dt):
+        if self._isdst(dt):
+            return DSTDIFF
+        else:
+            return ZERO
+
+    def tzname(self, dt):
+        return _time.tzname[self._isdst(dt)]
+
+    def _isdst(self, dt):
+        tt = (dt.year, dt.month, dt.day,
+              dt.hour, dt.minute, dt.second,
+              dt.weekday(), 0, 0)
+        stamp = _time.mktime(tt)
+        tt = _time.localtime(stamp)
+        return tt.tm_isdst > 0
+
+Local = LocalTimezone()
+
 class DataProvider(object):
     MatchCacheDir = 'match'
     PlayerCacheDir = 'player'
@@ -35,8 +75,13 @@ class DataProvider(object):
         6: "Devo",
         9: "Elec",
         161: "Gladi",
+        185: "Sil",
         192: "RA"
     }
+    
+    @staticmethod
+    def parsedate(datestr):
+        return datetime.strptime(datestr + " -0600",  "%Y-%m-%d %H:%M:%S %z")
 
 class HttpDataProvider(DataProvider):
 
@@ -213,8 +258,8 @@ class Player(object):
                           wp=self.wins(type)/self.gamesplayed(type)*100)
 
 class Match(object):
-    MatchesHeader = "{mid:10s} {gt:2s} {gd:7s} {date:19s} {k:>2s} {d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
-    MatchesFormat = "{mid:<10d} {gt:2s} {gd:7s} {date:17s} {k:2d} {d:2d} {a:2d} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
+    MatchesHeader = "{mid:10s} {gt:2s} {gd:4s} {date:16s} {k:>2s} {d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
+    MatchesFormat = "{mid:<10d} {gt:2s} {gd:4s} {date:15s} {k:2d} {d:2d} {a:2d} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
 
     def __init__(self, data):
         self.data = data
@@ -255,14 +300,19 @@ class Match(object):
         return int(stats[stat])
 
     def gameduration(self):
-        return datetime.timedelta(seconds=int(self.data[0]['time_played']))
+        return timedelta(seconds=int(self.data[0]['time_played']))
+        
+    def gamedatestr(self):
+        date = DataProvider.parsedate(self.data[0]['mdt'])
+        return date.astimezone(Local).isoformat(' ')[:16]
+        
 
     def matchesstr(self, id):
         matchsum = self.data[0]
         return Match.MatchesFormat.format(mid=int(matchsum['match_id']),
             gt=self.gametype(),
-            gd=self.gameduration(),
-            date=matchsum['mdt'],
+            gd=str(self.gameduration())[:4],
+            date=self.gamedatestr(),
             k=self.playerstat(id, 'herokills'),
             d=self.playerstat(id, 'deaths'),
             a=self.playerstat(id, 'heroassists'),
