@@ -16,27 +16,39 @@ import datetime
 dp = None
 
 DBCREATE = """
-CREATE TABLE player (
+CREATE TABLE IF NOT EXISTS player (
 id  INTEGER PRIMARY KEY,
 nick TEXT
-)
+);
+
+CREATE TABLE IF NOT EXISTS hero (
+id INTEGER PRIMARY KEY,
+name TEXT
+);
 """
 
 class DataProvider(object):
     MatchCacheDir = 'match'
     PlayerCacheDir = 'player'
 
+    HeroNicks = {
+        6: "Devo",
+        9: "Elec",
+        161: "Gladi",
+        192: "RA"
+    }
+
 class HttpDataProvider(DataProvider):
-    def __init__(self, url = 'http://api.heroesofnewerth.com/', token=None, cachedir=None):
+
+    def __init__(self, url = 'http://api.heroesofnewerth.com/', token=None, cachedir="~/.honstats"):
         self.url = url
         self.token = token
         self.cachedir = os.path.abspath(os.path.expanduser(cachedir))
         if self.cachedir:
+            os.makedirs(self.cachedir, exist_ok=True)
             dbfile = os.path.join(self.cachedir, 'stats.db')
-            create = not os.path.exists(dbfile)
-            self.db = sqlite3.connect(os.path.join(self.cachedir, 'stats.db'))
-            if create:
-                self.db.execute(DBCREATE)
+            self.db = sqlite3.connect(dbfile)
+            self.db.executescript(DBCREATE)
 
             os.makedirs(os.path.join(self.cachedir, DataProvider.MatchCacheDir), exist_ok=True)
             os.makedirs(os.path.join(self.cachedir, DataProvider.PlayerCacheDir), exist_ok=True)
@@ -48,9 +60,9 @@ class HttpDataProvider(DataProvider):
         cursor = self.db.cursor()
         cursor.execute("SELECT id from player WHERE nick = :nick", { 'nick': nick})
         row = cursor.fetchone()
+        cursor.close()
         if row:
             return int(row[0])
-        cursor.close()
         data = dp.fetch('player_statistics/ranked/nickname/' + nick)
         self.db.execute('INSERT INTO player VALUES( :id, :nick );',  {'id': int(data['account_id']), 'nick': nick})
         self.db.commit()
@@ -58,6 +70,21 @@ class HttpDataProvider(DataProvider):
 
     def id2nick(self, id):
         return id
+
+    def heroid2name(self, id):
+        if id in DataProvider.HeroNicks:
+            return DataProvider.HeroNicks[id]
+        cursor = self.db.cursor()
+        cursor.execute("SELECT name FROM hero WHERE id = :id", { 'id': id})
+        row = cursor.fetchone()
+        cursor.close()
+        if row:
+            return row[0]
+        data = dp.fetch('heroes/id/{id}'.format(id=id))
+        name = data['disp_name'].strip()
+        self.db.execute('INSERT INTO hero VALUES( :id, :name);',  {'id': id, 'name':name})
+        self.db.commit()
+        return name
 
     def fetch(self, path):
         url = self.url + path + "/?token=" + self.token
@@ -186,8 +213,8 @@ class Player(object):
                           wp=self.wins(type)/self.gamesplayed(type)*100)
 
 class Match(object):
-    MatchesHeader = "{mid:10s} {gt:2s} {gd:7s} {date:19s} {k:>2s} {d:>2s} {a:>2s} {hero:4s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
-    MatchesFormat = "{mid:<10d} {gt:2s} {gd:7s} {date:17s} {k:2d} {d:2d} {a:2d} {hero:4s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
+    MatchesHeader = "{mid:10s} {gt:2s} {gd:7s} {date:19s} {k:>2s} {d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
+    MatchesFormat = "{mid:<10d} {gt:2s} {gd:7s} {date:17s} {k:2d} {d:2d} {a:2d} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
 
     def __init__(self, data):
         self.data = data
@@ -239,7 +266,7 @@ class Match(object):
             k=self.playerstat(id, 'herokills'),
             d=self.playerstat(id, 'deaths'),
             a=self.playerstat(id, 'heroassists'),
-            hero=str(self.playerstat(id, 'hero_id')),
+            hero=dp.heroid2name(self.playerstat(id, 'hero_id'))[:5],
             wl="W" if int(self.playerstat(id, 'wins')) > 0 else "L",
             wa=self.playerstat(id, 'wards'),
             ck=self.playerstat(id, 'teamcreepkills') + self.playerstat(id, 'neutralcreepkills'),
