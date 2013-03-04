@@ -100,7 +100,7 @@ class HttpDataProvider(DataProvider):
 
     def fetchmatches(self, id, statstype):
         playerdir = os.path.join(self.cachedir,  DataProvider.PlayerCacheDir)
-        playermatches = os.path.join(playerdir, "{id}_matches.{statstype}".format(id=dp.nick2id(id), statstype=statstype))
+        playermatches = os.path.join(playerdir, "{id}_matches_{statstype}.gz".format(id=dp.nick2id(id), statstype=statstype))
         if os.path.exists(playermatches) and os.stat(playermatches).st_ctime > time.time() - Stats.CacheTime:
             with gzip.open(playermatches, 'rt') as f:
                 data = json.load(f)
@@ -118,7 +118,7 @@ class HttpDataProvider(DataProvider):
         matchdir = os.path.join(self.cachedir,  DataProvider.MatchCacheDir)
         matchpath = os.path.join(matchdir, str(matchid)[0:4])
         os.makedirs(matchpath, exist_ok=True)
-        matchpath = os.path.join(matchpath, str(matchid))
+        matchpath = os.path.join(matchpath, str(matchid) + ".gz")
         if os.path.exists(matchpath):
             with gzip.open(matchpath, 'rt') as f:
                 data = json.load(f)
