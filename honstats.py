@@ -17,7 +17,7 @@ def playercommand(args):
         data = args.dataprovider.fetch('player_statistics/' + args.statstype + DataProvider.nickoraccountid(id))
         player = Player(id, data)
         #print(json.dumps(data))
-        print(player.str(args.statstype))
+        print(player.str(args.dataprovider, args.statstype))
 
 def matchescommand(args):
     for id in args.id:
@@ -32,13 +32,17 @@ def matchescommand(args):
 
         print(args.dataprovider.id2nick(id))
         print(Match.headermatches())
-        for i in range(limit):
-            match = Match(args.dataprovider.fetchmatchdata(matchids[i]))
+        matches = args.dataprovider.fetchmatchdata(matchids[:limit])
+        for matchid in matchids[:limit]:
+            match = Match(matches[matchid])
             print(match.matchesstr(args.dataprovider.nick2id(id), args.dataprovider))
         #print(json.dumps(history))
 
 def matchcommand(args):
-    print(args)
+    matches = args.dataprovider.fetchmatchdata(args.matchid)
+    for mid in args.matchid:
+        match = Match(matches[mid])
+        print(match.matchstr(args.dataprovider))
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')

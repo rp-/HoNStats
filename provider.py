@@ -5,6 +5,7 @@ import urllib.request
 from urllib.error import HTTPError
 import gzip
 import time
+#import re
 
 DBCREATE = """
 CREATE TABLE IF NOT EXISTS player (
@@ -21,7 +22,7 @@ name TEXT
 class DataProvider(object):
     MatchCacheDir = 'match'
     PlayerCacheDir = 'player'
-    
+
     CacheTime = 60 * 5
 
     HeroNicks = {
@@ -31,7 +32,7 @@ class DataProvider(object):
         185: "Sil",
         192: "RA"
     }
-    
+
     @staticmethod
     def nickoraccountid(id):
         try:
@@ -66,12 +67,34 @@ class HttpDataProvider(DataProvider):
         if row:
             return int(row[0])
         data = self.fetch('player_statistics/ranked/nickname/' + nick)
-        self.db.execute('INSERT INTO player VALUES( :id, :nick );',  {'id': int(data['account_id']), 'nick': nick})
-        self.db.commit()
+        # insert the real nick into database, case sensitiv
+        self.id2nick(int(data['account_id']))
         return int(data['account_id'])
 
     def id2nick(self, id):
-        return id
+        if isinstance(id,int):
+#            resp = urllib.request.urlopen('http://forums.heroesofnewerth.com/member.php?' + str(int(id)))
+#            begin = resp.read(4048).decode('utf-8')
+#            print(begin)
+#            m = re.search(r'<title>View Profile:\s*(\S+)-', begin)
+#            if m:
+#                return m.group(1)
+            cursor = self.db.cursor()
+            cursor.execute("SELECT nick FROM player WHERE id = :id", { 'id': id})
+            row = cursor.fetchone()
+            cursor.close()
+            if row:
+                return row[0]
+
+            resp = urllib.request.urlopen('http://www.hondmg.com/api/id_to_nick/' + str(int(id)))
+            reply = json.loads(resp.read().decode())
+            resp.close()
+            if str(id) in reply:
+                self.db.execute('INSERT INTO player VALUES( :id, :nick );', {'id': id, 'nick': reply[str(id)]})
+                self.db.commit()
+                return reply[str(id)]
+
+        return str(id)
 
     def heroid2name(self, id):
         if id in DataProvider.HeroNicks:
@@ -98,7 +121,9 @@ class HttpDataProvider(DataProvider):
                 time.sleep(0.1) # this might be a bit harsh, but fetch until we get what we want
                 return self.fetch(path)
             raise e
-        return json.loads(resp.read().decode('utf-8'))
+        data = json.loads(resp.read().decode('utf-8'))
+        resp.close()
+        return data
 
     def fetchmatches(self, id, statstype):
         playerdir = os.path.join(self.cachedir,  DataProvider.PlayerCacheDir)
@@ -113,25 +138,34 @@ class HttpDataProvider(DataProvider):
                 f.write(json.dumps(data))
         return data
 
-    def fetchmatchdata(self, matchid):
+    def fetchmatchdata(self, matchids):
         """Fetches match data by id and caches it onto disk
            First checks if the match stats are already cached
+
+           Args:
+             matchids: list of match ids
+
+           Returns:
+             dict with matches, the key is the matchid
         """
-        matchdir = os.path.join(self.cachedir,  DataProvider.MatchCacheDir)
-        matchpath = os.path.join(matchdir, str(matchid)[0:4])
-        os.makedirs(matchpath, exist_ok=True)
-        matchpath = os.path.join(matchpath, str(matchid) + ".gz")
-        if os.path.exists(matchpath):
-            with gzip.open(matchpath, 'rt') as f:
-                data = json.load(f)
-        else:
-            data = self.fetch('match/summ/matchid/{id}'.format(id=matchid))
-            matchstats = self.fetch('match/all/matchid/{id}'.format(id=matchid))
-            data.append(matchstats[0][0]) # settings
-            data.append(matchstats[1]) # items
-            data.append(matchstats[2]) # player stats
-            with gzip.open(matchpath, 'wt+') as f:
-                f.write(json.dumps(data))
+        data = {}
+        for matchid in matchids:
+            matchdir = os.path.join(self.cachedir,  DataProvider.MatchCacheDir)
+            matchpath = os.path.join(matchdir, str(matchid)[0:4])
+            os.makedirs(matchpath, exist_ok=True)
+            matchpath = os.path.join(matchpath, str(matchid) + ".gz")
+            if os.path.exists(matchpath):
+                with gzip.open(matchpath, 'rt') as f:
+                    matchdata = json.load(f)
+            else:
+                matchdata = self.fetch('match/summ/matchid/{id}'.format(id=matchid))
+                matchstats = self.fetch('match/all/matchid/{id}'.format(id=matchid))
+                matchdata.append(matchstats[0][0]) # settings
+                matchdata.append(matchstats[1]) # items
+                matchdata.append(matchstats[2]) # player stats
+                with gzip.open(matchpath, 'wt+') as f:
+                    f.write(json.dumps(matchdata))
+            data[matchid] = matchdata
         return data
 
 class FSDataProvider(DataProvider):
