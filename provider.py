@@ -61,7 +61,7 @@ class HttpDataProvider(DataProvider):
 
     def nick2id(self, nick):
         cursor = self.db.cursor()
-        cursor.execute("SELECT id from player WHERE nick = :nick", { 'nick': nick})
+        cursor.execute("SELECT id from player WHERE lower(nick) = lower(:nick)", { 'nick': nick})
         row = cursor.fetchone()
         cursor.close()
         if row:
