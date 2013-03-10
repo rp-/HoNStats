@@ -9,21 +9,19 @@ from provider import DataProvider, HttpDataProvider
 
 """honstats console statistics program for Heroes of Newerth
 """
-dp = None
-
 def playercommand(args):
     print(Player.header())
 
     for id in args.id:
         #print(url)
-        data = dp.fetch('player_statistics/' + args.statstype + DataProvider.nickoraccountid(id))
+        data = args.dataprovider.fetch('player_statistics/' + args.statstype + DataProvider.nickoraccountid(id))
         player = Player(id, data)
         #print(json.dumps(data))
         print(player.str(args.statstype))
 
 def matchescommand(args):
     for id in args.id:
-        data = dp.fetchmatches(id, args.statstype)
+        data = args.dataprovider.fetchmatches(id, args.statstype)
         history = ""
         if len(data) > 0:
             history = data[0]['history']
@@ -32,11 +30,11 @@ def matchescommand(args):
         matchids = [ int(x.split('|')[0]) for  x in hist ]
         matchids = sorted(matchids, reverse=True)
 
-        print(dp.id2nick(id))
+        print(args.dataprovider.id2nick(id))
         print(Match.headermatches())
         for i in range(limit):
-            match = Match(dp.fetchmatchdata(matchids[i]))
-            print(match.matchesstr(dp.nick2id(id), dp))
+            match = Match(args.dataprovider.fetchmatchdata(matchids[i]))
+            print(match.matchesstr(args.dataprovider.nick2id(id), args.dataprovider))
         #print(json.dumps(history))
 
 def matchcommand(args):
@@ -80,9 +78,7 @@ def main():
         args.token = cp.get('auth', 'token')
 
     if 'func' in args:
-        global dp
-        #dp = FSDataProvider() #development url
-        dp = HttpDataProvider(args.host, token=args.token,  cachedir=cp.get('cache', 'directory'))
+        args.dataprovider = HttpDataProvider(args.host, token=args.token,  cachedir=cp.get('cache', 'directory'))
         args.func(args)
     else:
         parser.print_help()
