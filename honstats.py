@@ -32,9 +32,11 @@ def matchescommand(args):
 
         print(args.dataprovider.id2nick(id))
         print(Match.headermatches())
-        matches = args.dataprovider.fetchmatchdata(matchids[:limit])
-        for matchid in matchids[:limit]:
-            match = Match(matches[matchid])
+        for i in range(limit):
+            match = Match(args.dataprovider.fetchmatchdata([matchids[i]])[matchids[i]])
+#        matches = args.dataprovider.fetchmatchdata(matchids[:limit])
+#        for matchid in matchids[:limit]:
+#            match = Match(matches[matchid])
             print(match.matchesstr(args.dataprovider.nick2id(id), args.dataprovider))
         #print(json.dumps(history))
 
