@@ -48,8 +48,9 @@ def matchcommand(args):
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
-    #parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
-    parser.add_argument('--host', default='http://localhost:1234/', help='statistic host provider')
+    parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
+    #parser.add_argument('--host', default='http://localhost:1234/', help='statistic host provider')
+    parser.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     parser.add_argument('-t', '--token', help="hon statistics token")
     parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'], default='ranked', help='Statstype to show')
 
@@ -60,7 +61,6 @@ def main():
 
     matchescmd = subparsers.add_parser('matches', help='Show matches of a player(s)')
     matchescmd.set_defaults(func=matchescommand)
-    matchescmd.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     matchescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
 
     matchescmd = subparsers.add_parser('match', help='Show stats for match(es)')
