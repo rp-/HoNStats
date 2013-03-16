@@ -90,7 +90,7 @@ def main():
     if not os.path.exists(configpath):
         configpath = os.path.expanduser('~/.config/honstats/config')
     if os.path.exists(configpath):
-        cp = configparser.ConfigParser()
+        cp = configparser.SafeConfigParser({'directory': os.path.expanduser('~/.honstats')})
         cp.read(configpath)
     else:
         cp = {}
