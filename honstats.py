@@ -63,13 +63,17 @@ def matchcommand(args):
         match = Match(matches[mid])
         print(match.matchstr(args.dataprovider))
 
+def heroplayerscommand(args):
+    print(args)
+
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
-    parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
-    #parser.add_argument('--host', default='http://localhost:1234/', help='statistic host provider')
+    #parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
+    parser.add_argument('--host', default='http://localhost:1234/', help='statistic host provider')
     parser.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     parser.add_argument('-t', '--token', help="hon statistics token")
-    parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'], default='ranked', help='Statstype to show')
+    parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'],
+                        default='ranked', help='Statstype to show')
 
     subparsers = parser.add_subparsers(help='honstats commands')
     playercmd = subparsers.add_parser('player', help='Show player stats')
@@ -80,9 +84,15 @@ def main():
     matchescmd.set_defaults(func=matchescommand)
     matchescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
 
-    matchescmd = subparsers.add_parser('match', help='Show stats for match(es)')
-    matchescmd.set_defaults(func=matchcommand)
-    matchescmd.add_argument('matchid', nargs='+', help='HoN match id')
+    matchcmd = subparsers.add_parser('match', help='Show stats for match(es)')
+    matchcmd.set_defaults(func=matchcommand)
+    matchcmd.add_argument('matchid', nargs='+', help='HoN match id')
+
+    heroplayercmd = subparsers.add_parser('hero-players', help='Show stats for heros played')
+    heroplayercmd.set_defaults(func=heroplayerscommand)
+    heroplayercmd.add_argument('id', nargs='+', help='Player nickname or hon id')
+    heroplayercmd.add_argument('-b', "--sort-by", choices=['use','kdr','k','d','a','kpg','dpg','apg'],
+                               default='use', help='Sort by specified stat')
 
     args = parser.parse_args()
 
