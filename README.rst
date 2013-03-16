@@ -27,14 +27,15 @@ location and order:
 The configuration file contains the following sections:
 
 [auth]
-  *token* Your HoN authentication token.
+  **token** Your HoN authentication token.
 
 [cache]
-  *directory* Path to your cache directory, default $HOME/.honstats
+  **directory** Path to your cache directory, default $HOME/.honstats
 
 Example:
 
 ::
+
   [auth]
   token=HON1AUTH2TOKEN3
 
@@ -43,5 +44,5 @@ Example:
 
 License
 -------
-The code is license under the GPLv3.
+The code is licensed under the GPLv3.
 http://www.gnu.org/licenses/gpl.html
