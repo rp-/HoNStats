@@ -30,6 +30,20 @@ class Player(object):
     HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wp:<2s}"
     PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wp:2.0f}"
 
+    PlayerHeroHeaderFormat = "{hero:<10s} {use:<3s} {perc:<2s} {k:3s} " \
+        "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {kpg:<5s} " \
+        "{dpg:<5s} {apg:<5s} {gpm:<3s} {wpg:<3s}"
+    PlayerHeroHeader = PlayerHeroHeaderFormat.format(hero='Hero',use='Use',
+                                                          perc=' %',k='  K',d='  D',
+                                                          a='  A',kdr='KDR',w='W',
+                                                          l='L',kpg='KPG',dpg='DPG',
+                                                          apg='APG',gpm='GPM',
+                                                          wpg='WPG')
+
+    PlayerHeroFormat = "{hero:<10s} {use:3d} {perc:2d} {k:3d} " \
+        "{d:3d} {a:3d} {kdr:<5.2f} {wins:<2d} {losses:<2d} {kpg:<5.2f} " \
+        "{dpg:<5.2f} {apg:<5.2f} {gpm:<3d} {wpg:<3.1f}"
+
     def __init__(self, nickname, data):
         self.nickname = nickname
         self.data = data
@@ -63,6 +77,49 @@ class Player(object):
     def wins(self, type = Stats.DefaultStatsType):
         return int(self.data[Player.StatsMapping[type] + '_wins'])
 
+    def playerheros(self, dp, type = Stats.DefaultStatsType, sortby='use', order='asc'):
+        matches = dp.matches(self.id(), type)
+        playerhero = {}
+        matchdata = dp.fetchmatchdata(matches)
+        for matchid in matchdata:
+            match = Match(matchdata[matchid])
+            heroid = int(match.playerstat(self.id(), 'hero_id'))
+            if not heroid in playerhero:
+                playerhero[heroid] = {'heroid': heroid,
+                                      'use': 0,
+                                      'k': 0,
+                                      'd': 0,
+                                      'a': 0,
+                                      'wins': 0,
+                                      'losses': 0,
+                                      'gpm': 0,
+                                      'wards': 0,
+                                      'gold': 0,
+                                      'playedtime': 0}
+            playerhero[heroid]['use'] += 1
+            playerhero[heroid]['k'] += int(match.playerstat(self.id(), 'herokills'))
+            playerhero[heroid]['d'] += int(match.playerstat(self.id(), 'deaths'))
+            playerhero[heroid]['a'] += int(match.playerstat(self.id(), 'heroassists'))
+            playerhero[heroid]['wins'] += int(match.playerstat(self.id(), 'wins'))
+            playerhero[heroid]['losses'] += int(match.playerstat(self.id(), 'losses'))
+            playerhero[heroid]['gold'] += int(match.playerstat(self.id(), 'gold'))
+            playerhero[heroid]['wards'] += int(match.playerstat(self.id(), 'wards'))
+            playerhero[heroid]['playedtime'] += match.gameduration().total_seconds()
+
+        # finalize stats so we can sort all values easily after
+        for heroid in playerhero:
+            stats = playerhero[heroid]
+            stats['perc'] = int(stats['use']/len(matchdata) * 100)
+            stats['kdr'] = stats['k']/stats['d'] if stats['d'] > 0 else stats['k']
+            stats['kpg'] = stats['k']/stats['use']
+            stats['dpg'] = stats['d']/stats['use']
+            stats['apg'] = stats['a']/stats['use']
+            stats['wpg'] = stats['wards']/stats['use']
+            stats['gpm'] = int(stats['gold'] / (stats['playedtime']/60))
+        sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order=='asc')
+        return sortedstats
+
+
     @staticmethod
     def header(type=Stats.DefaultStatsType):
         return Player.HeaderFormat.format(nick="Nick",
@@ -87,6 +144,7 @@ class Player(object):
                           kdr=self.kills(type)/self.deaths(type),
                           pg=self.gamesplayed(type),
                           wp=self.wins(type)/self.gamesplayed(type)*100)
+
 
 class Match(object):
     MatchesHeader = "{mid:10s} {gt:2s} {gd:4s} {date:16s} {k:>2s} {d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"

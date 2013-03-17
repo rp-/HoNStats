@@ -29,6 +29,14 @@ id  INTEGER PRIMARY KEY,
 nick TEXT
 );
 
+CREATE TABLE IF NOT EXISTS playerdata (
+id INTEGER,
+date DATETIME,
+statstype TEXT,
+data TEXT,
+PRIMARY KEY(id, date, statstype)
+);
+
 CREATE TABLE IF NOT EXISTS hero (
 id INTEGER PRIMARY KEY,
 name TEXT
@@ -60,11 +68,12 @@ class DataProvider(object):
     def nickoraccountid(id):
         try:
             int(id)
-            return '/accountid/' + id
+            return '/accountid/' + str(id)
         except ValueError:
             return '/nickname/' + id
 
 class HttpDataProvider(DataProvider):
+    StatsMapping = {'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
 
     def __init__(self, url = 'http://api.heroesofnewerth.com/', token=None, cachedir="~/.honstats"):
         self.url = url
@@ -83,16 +92,20 @@ class HttpDataProvider(DataProvider):
         self.db.close()
 
     def nick2id(self, nick):
-        cursor = self.db.cursor()
-        cursor.execute("SELECT id from player WHERE lower(nick) = lower(:nick)", { 'nick': nick})
-        row = cursor.fetchone()
-        cursor.close()
-        if row:
-            return int(row[0])
-        data = self.fetch('player_statistics/ranked/nickname/' + nick)
-        # insert the real nick into database, case sensitiv
-        self.id2nick(int(data['account_id']))
-        return int(data['account_id'])
+        try:
+            int(nick)
+        except ValueError:
+            cursor = self.db.cursor()
+            cursor.execute("SELECT id from player WHERE lower(nick) = lower(:nick)", { 'nick': nick})
+            row = cursor.fetchone()
+            cursor.close()
+            if row:
+                return int(row[0])
+            data = self.fetch('player_statistics/ranked/nickname/' + nick)
+            # insert the real nick into database, case sensitiv
+            self.id2nick(int(data['account_id']))
+            return int(data['account_id'])
+        return int(nick)
 
     def id2nick(self, id):
         if isinstance(id,int):
@@ -148,6 +161,31 @@ class HttpDataProvider(DataProvider):
         resp.close()
         return data
 
+    def fetchplayer(self, id, statstype):
+        cursor = self.db.cursor()
+        cursor.execute("SELECT data FROM playerdata WHERE id=:id AND strftime('%s',date)-:date>0 AND statstype=:statstype ORDER BY date;",
+                       {'id': self.nick2id(id), 'date': int(time.time() - DataProvider.CacheTime), 'statstype': statstype})
+        row = cursor.fetchone()
+        cursor.close()
+        if row:
+            return json.loads(row[0])
+        data = self.fetch('player_statistics/' + statstype + DataProvider.nickoraccountid(id))
+
+#        # check if the data really changed
+#        cursor = self.db.cursor()
+#        cursor.execute("SELECT data FROM playerdata WHERE id=:id AND statstype=:statstype " \
+#                       "AND strftime('%s', date)=(select MAX(strftime('%s',date)) from playerdata WHERE id=:id AND statstype=:statstype);",
+#                       {'id': self.nick2id(id), 'date': int(time.time() - DataProvider.CacheTime), 'statstype': statstype})
+#        dbdata = json.loads(cursor.fetchone()[0])
+#        # insert if we have more games
+#        if int(dbdata[self.StatsMapping[statstype] + '_games_played']) != int(data[self.StatsMapping[statstype] + '_games_played']):
+        if True:
+            self.db.execute("INSERT INTO playerdata VALUES(:id, CURRENT_TIMESTAMP, :statstype, :data);",
+                            {'id': self.nick2id(id), 'statstype': statstype, 'data': json.dumps(data)})
+            self.db.commit()
+
+        return data
+
     def fetchmatches(self, id, statstype):
         playerdir = os.path.join(self.cachedir,  DataProvider.PlayerCacheDir)
         playermatches = os.path.join(playerdir, "{id}_matches_{statstype}.gz".format(id=self.nick2id(id), statstype=statstype))
@@ -160,6 +198,16 @@ class HttpDataProvider(DataProvider):
             with gzip.open(playermatches,'wt+') as f:
                 f.write(json.dumps(data))
         return data
+
+    def matches(self, id, statstype):
+        data = self.fetchmatches(id, statstype)
+        history = ""
+        if len(data) > 0:
+            history = data[0]['history']
+        hist = history.split(',')
+        matchids = [ int(x.split('|')[0]) for  x in hist ]
+        matchids = sorted(matchids, reverse=True)
+        return matchids
 
     def fetchmatchdata(self, matchids):
         """Fetches match data by id and caches it onto disk
