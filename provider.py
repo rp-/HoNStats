@@ -44,6 +44,13 @@ class DataProvider(object):
     HeroNicks = {
         6: "Devo",
         9: "Elec",
+        15: "Swift",
+        16: "BH",
+        29: "WB",
+        42: "MadM",
+        43: "DS",
+        104: "Hag",
+        121: "FA",
         161: "Gladi",
         185: "Sil",
         192: "RA"
