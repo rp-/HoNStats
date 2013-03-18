@@ -73,6 +73,16 @@ def playerherosscommand(args):
             print(Player.PlayerHeroFormat.format(**stat))
 
 
+def lastmatchescommand(args):
+    for id in args.id:
+        id_hero = (id, args.hero) if args.hero else None
+        matchids = args.dataprovider.matches(id, args.statstype)
+        matches = args.dataprovider.fetchmatchdata(matchids, limit=args.count, id_hero=id_hero)
+        print(args.dataprovider.id2nick(id))
+        for mid in sorted(matches.keys(), reverse=True):
+            match = Match(matches[mid])
+            print(match.matchstr(args.dataprovider))
+
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
     parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
@@ -100,6 +110,12 @@ def main():
     playerheroscmd.add_argument('-b', "--sort-by", choices=['use','kdr','k','d','a','kpg','dpg','apg', 'gpm', 'wpg', 'wins', 'losses'],
                                 default='use', help='Sort by specified stat')
     playerheroscmd.add_argument('-o', "--order", choices=['asc','desc'], default='asc', help='sort order')
+
+    lastmatchescmd = subparsers.add_parser('lastmatches', help='lastmatches for a player')
+    lastmatchescmd.set_defaults(func=lastmatchescommand)
+    lastmatchescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
+    lastmatchescmd.add_argument('-c', '--count', default=3, type=int, help='How many games')
+    lastmatchescmd.add_argument('--hero', type=str, help='Filter to games with a certian hero')
 
     args = parser.parse_args()
 
