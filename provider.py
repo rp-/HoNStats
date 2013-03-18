@@ -261,10 +261,3 @@ class HttpDataProvider(DataProvider):
             i += 1
         return data
 
-class FSDataProvider(DataProvider):
-    def __init__(self, url = './sampledata'):
-        self.url = os.path.abspath(url)
-
-    def fetch(self, path):
-        with open(os.path.join(self.url, path)) as fd:
-            return json.load(fd)
