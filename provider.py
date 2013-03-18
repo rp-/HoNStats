@@ -157,7 +157,12 @@ class HttpDataProvider(DataProvider):
                 time.sleep(0.1) # this might be a bit harsh, but fetch until we get what we want
                 return self.fetch(path)
             raise e
-        data = json.loads(resp.read().decode('utf-8'))
+        raw = resp.read().decode('utf-8').strip()
+
+        # work around a serialization bug from hon
+        if raw.startswith('Notice:'):
+            raw = raw[raw.find('\n'):]
+        data = json.loads(raw)
         resp.close()
         return data
 
