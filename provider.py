@@ -132,8 +132,8 @@ class HttpDataProvider(DataProvider):
 
         return str(id)
 
-    def heroid2name(self, id):
-        if id in DataProvider.HeroNicks:
+    def heroid2name(self, id, full=False):
+        if not full and id in DataProvider.HeroNicks:
             return DataProvider.HeroNicks[id]
         cursor = self.db.cursor()
         cursor.execute("SELECT name FROM hero WHERE id = :id", { 'id': id})
