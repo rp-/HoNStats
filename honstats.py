@@ -75,8 +75,7 @@ def playerherosscommand(args):
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
-    #parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
-    parser.add_argument('--host', default='http://localhost:1234/', help='statistic host provider')
+    parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
     parser.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     parser.add_argument('-t', '--token', help="hon statistics token")
     parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'],
