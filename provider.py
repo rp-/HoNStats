@@ -47,7 +47,7 @@ class DataProvider(object):
     MatchCacheDir = 'match'
     PlayerCacheDir = 'player'
 
-    CacheTime = 60 * 5
+    CacheTime = 60 * 15
 
     HeroNicks = {
         6: "Devo",
