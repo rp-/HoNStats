@@ -209,7 +209,7 @@ class HttpDataProvider(DataProvider):
         matchids = sorted(matchids, reverse=True)
         return matchids
 
-    def fetchmatchdata(self, matchids):
+    def fetchmatchdata(self, matchids, *, limit=None, id_hero=None):
         """Fetches match data by id and caches it onto disk
            First checks if the match stats are already cached
 
@@ -220,7 +220,14 @@ class HttpDataProvider(DataProvider):
              dict with matches, the key is the matchid
         """
         data = {}
-        for matchid in matchids:
+        limit = limit if limit else len(matchids)
+        if id_hero:
+            id, heroname = id_hero
+            id = self.nick2id(id)
+
+        i = 0
+        while len(data) < limit and i < len(matchids):
+            matchid = matchids[i]
             matchdir = os.path.join(self.cachedir,  DataProvider.MatchCacheDir)
             matchpath = os.path.join(matchdir, str(matchid)[0:4])
             os.makedirs(matchpath, exist_ok=True)
@@ -236,7 +243,17 @@ class HttpDataProvider(DataProvider):
                 matchdata.append(matchstats[2]) # player stats
                 with gzip.open(matchpath, 'wt+') as f:
                     f.write(json.dumps(matchdata))
-            data[matchid] = matchdata
+            if id_hero:
+                playerstats = matchdata[3]
+                for stats in playerstats:
+                    if id == int(stats['account_id']):
+                        playedhero = self.heroid2name(stats['hero_id'],full=True).lower()
+                        if heroname in playedhero:
+                            data[matchid] = matchdata
+                        break
+            else:
+                data[matchid] = matchdata
+            i += 1
         return data
 
 class FSDataProvider(DataProvider):
