@@ -85,6 +85,7 @@ def lastmatchescommand(args):
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
+    parser.add_argument('-q', '--quiet', action='store_true', help='Limit exception output to one liners')
     parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
     parser.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     parser.add_argument('-t', '--token', help="hon statistics token")
@@ -119,25 +120,31 @@ def main():
 
     args = parser.parse_args()
 
-    configpath = '/etc/honstats'
-    if not os.path.exists(configpath):
-        configpath = os.path.expanduser('~/.config/honstats/config')
-    if os.path.exists(configpath):
-        cp = configparser.SafeConfigParser({'directory': os.path.expanduser('~/.honstats')})
-        cp.read(configpath)
-    else:
-        cp = {}
+    try:
+        configpath = '/etc/honstats'
+        if not os.path.exists(configpath):
+            configpath = os.path.expanduser('~/.config/honstats/config')
+        if os.path.exists(configpath):
+            cp = configparser.SafeConfigParser({'directory': os.path.expanduser('~/.honstats')})
+            cp.read(configpath)
+        else:
+            cp = {}
 
-    if not args.token and not 'auth' in cp:
-        sys.exit('Token not specified and no config file found.')
-    else:
-        args.token = cp.get('auth', 'token')
+        if not args.token and not 'auth' in cp:
+            sys.exit('Token not specified and no config file found.')
+        else:
+            args.token = cp.get('auth', 'token')
 
-    if 'func' in args:
-        args.dataprovider = HttpDataProvider(args.host, token=args.token,  cachedir=cp.get('cache', 'directory'))
-        args.func(args)
-    else:
-        parser.print_help()
+        if 'func' in args:
+            args.dataprovider = HttpDataProvider(args.host, token=args.token,  cachedir=cp.get('cache', 'directory'))
+            args.func(args)
+        else:
+            parser.print_help()
+    except Exception as e:
+        if args.quiet:
+            sys.stderr.write(str(e) + '\n')
+        else:
+            raise e
 
 if __name__ == "__main__":
     main()
