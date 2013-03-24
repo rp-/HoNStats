@@ -43,6 +43,7 @@ name TEXT
 );
 """
 
+
 class DataProvider(object):
     MatchCacheDir = 'match'
     PlayerCacheDir = 'player'
@@ -65,17 +66,18 @@ class DataProvider(object):
     }
 
     @staticmethod
-    def nickoraccountid(id):
+    def nickoraccountid(aid):
         try:
-            int(id)
-            return '/accountid/' + str(id)
+            int(aid)
+            return '/accountid/' + str(aid)
         except ValueError:
-            return '/nickname/' + id
+            return '/nickname/' + aid
+
 
 class HttpDataProvider(DataProvider):
     StatsMapping = {'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
 
-    def __init__(self, url = 'http://api.heroesofnewerth.com/', token=None, cachedir="~/.honstats"):
+    def __init__(self, url='http://api.heroesofnewerth.com/', token=None, cachedir="~/.honstats"):
         self.url = url
         self.token = token
         self.cachedir = os.path.abspath(os.path.expanduser(cachedir))
@@ -96,7 +98,7 @@ class HttpDataProvider(DataProvider):
             int(nick)
         except ValueError:
             cursor = self.db.cursor()
-            cursor.execute("SELECT id from player WHERE lower(nick) = lower(:nick)", { 'nick': nick})
+            cursor.execute("SELECT id from player WHERE lower(nick) = lower(:nick)", {'nick': nick})
             row = cursor.fetchone()
             cursor.close()
             if row:
@@ -107,8 +109,8 @@ class HttpDataProvider(DataProvider):
             return int(data['account_id'])
         return int(nick)
 
-    def id2nick(self, id):
-        if isinstance(id,int):
+    def id2nick(self, aid):
+        if isinstance(aid, int):
 #            resp = urllib.request.urlopen('http://forums.heroesofnewerth.com/member.php?' + str(int(id)))
 #            begin = resp.read(4048).decode('utf-8')
 #            print(begin)
@@ -116,34 +118,34 @@ class HttpDataProvider(DataProvider):
 #            if m:
 #                return m.group(1)
             cursor = self.db.cursor()
-            cursor.execute("SELECT nick FROM player WHERE id = :id", { 'id': id})
+            cursor.execute("SELECT nick FROM player WHERE id = :id", {'id': aid})
             row = cursor.fetchone()
             cursor.close()
             if row:
                 return row[0]
 
-            resp = urllib.request.urlopen('http://www.hondmg.com/api/id_to_nick/' + str(int(id)))
+            resp = urllib.request.urlopen('http://www.hondmg.com/api/id_to_nick/' + str(int(aid)))
             reply = json.loads(resp.read().decode())
             resp.close()
-            if str(id) in reply:
-                self.db.execute('INSERT INTO player VALUES( :id, :nick );', {'id': id, 'nick': reply[str(id)]})
+            if str(aid) in reply:
+                self.db.execute('INSERT INTO player VALUES( :id, :nick );', {'id': aid, 'nick': reply[str(aid)]})
                 self.db.commit()
-                return reply[str(id)]
+                return reply[str(aid)]
 
-        return str(id)
+        return str(aid)
 
-    def heroid2name(self, id, full=False):
-        if not full and id in DataProvider.HeroNicks:
-            return DataProvider.HeroNicks[id]
+    def heroid2name(self, aid, full=False):
+        if not full and aid in DataProvider.HeroNicks:
+            return DataProvider.HeroNicks[aid]
         cursor = self.db.cursor()
-        cursor.execute("SELECT name FROM hero WHERE id = :id", { 'id': id})
+        cursor.execute("SELECT name FROM hero WHERE id = :id", {'id': aid})
         row = cursor.fetchone()
         cursor.close()
         if row:
             return row[0]
-        data = self.fetch('heroes/id/{id}'.format(id=id))
+        data = self.fetch('heroes/id/{id}'.format(id=aid))
         name = data['disp_name'].strip()
-        self.db.execute('INSERT INTO hero VALUES( :id, :name);',  {'id': id, 'name':name})
+        self.db.execute('INSERT INTO hero VALUES( :id, :name);',  {'id': aid, 'name': name})
         self.db.commit()
         return name
 
@@ -153,8 +155,8 @@ class HttpDataProvider(DataProvider):
         try:
             resp = urllib.request.urlopen(url)
         except HTTPError as e:
-            if e.code == 429: #too much requests
-                time.sleep(0.1) # this might be a bit harsh, but fetch until we get what we want
+            if e.code == 429:  # too much requests
+                time.sleep(0.1)  # this might be a bit harsh, but fetch until we get what we want
                 return self.fetch(path)
             raise e
         raw = resp.read().decode('utf-8').strip()
@@ -166,51 +168,58 @@ class HttpDataProvider(DataProvider):
         resp.close()
         return data
 
-    def fetchplayer(self, id, statstype):
+    def fetchplayer(self, aid, statstype):
         cursor = self.db.cursor()
-        cursor.execute("SELECT data FROM playerdata WHERE id=:id AND strftime('%s',date)-:date>0 AND statstype=:statstype ORDER BY date;",
-                       {'id': self.nick2id(id), 'date': int(time.time() - DataProvider.CacheTime), 'statstype': statstype})
+        cursor.execute("SELECT data FROM playerdata WHERE id=:id AND "
+                       "strftime('%s',date)-:date>0 AND statstype=:statstype ORDER BY date;",
+                       {'id': self.nick2id(aid), 'date': int(time.time() - DataProvider.CacheTime),
+                        'statstype': statstype})
         row = cursor.fetchone()
         cursor.close()
         if row:
             return json.loads(row[0])
-        data = self.fetch('player_statistics/' + statstype + DataProvider.nickoraccountid(id))
+        data = self.fetch('player_statistics/' + statstype + DataProvider.nickoraccountid(aid))
 
 #        # check if the data really changed
 #        cursor = self.db.cursor()
 #        cursor.execute("SELECT data FROM playerdata WHERE id=:id AND statstype=:statstype " \
-#                       "AND strftime('%s', date)=(select MAX(strftime('%s',date)) from playerdata WHERE id=:id AND statstype=:statstype);",
-#                       {'id': self.nick2id(id), 'date': int(time.time() - DataProvider.CacheTime), 'statstype': statstype})
+#                       "AND strftime('%s', date)=(select MAX(strftime('%s',date)) " \
+#                       "from playerdata WHERE id=:id AND statstype=:statstype);",
+#                       {'id': self.nick2id(id), 'date': int(time.time() - DataProvider.CacheTime),
+#                       'statstype': statstype})
 #        dbdata = json.loads(cursor.fetchone()[0])
 #        # insert if we have more games
-#        if int(dbdata[self.StatsMapping[statstype] + '_games_played']) != int(data[self.StatsMapping[statstype] + '_games_played']):
+#        if int(dbdata[self.StatsMapping[statstype] + '_games_played']) !=
+#           int(data[self.StatsMapping[statstype] + '_games_played']):
         if True:
             self.db.execute("INSERT INTO playerdata VALUES(:id, CURRENT_TIMESTAMP, :statstype, :data);",
-                            {'id': self.nick2id(id), 'statstype': statstype, 'data': json.dumps(data)})
+                            {'id': self.nick2id(aid), 'statstype': statstype, 'data': json.dumps(data)})
             self.db.commit()
 
         return data
 
-    def fetchmatches(self, id, statstype):
+    def fetchmatches(self, aid, statstype):
         playerdir = os.path.join(self.cachedir,  DataProvider.PlayerCacheDir)
-        playermatches = os.path.join(playerdir, "{id}_matches_{statstype}.gz".format(id=self.nick2id(id), statstype=statstype))
+        playermatches = os.path.join(playerdir, "{id}_matches_{statstype}.gz".format(
+            id=self.nick2id(aid),
+            statstype=statstype))
         if os.path.exists(playermatches) and os.stat(playermatches).st_ctime > time.time() - DataProvider.CacheTime:
             with gzip.open(playermatches, 'rt') as f:
                 data = json.load(f)
         else:
-            path = 'match_history/' + statstype + DataProvider.nickoraccountid(id)
+            path = 'match_history/' + statstype + DataProvider.nickoraccountid(aid)
             data = self.fetch(path)
-            with gzip.open(playermatches,'wt+') as f:
+            with gzip.open(playermatches, 'wt+') as f:
                 f.write(json.dumps(data))
         return data
 
-    def matches(self, id, statstype):
-        data = self.fetchmatches(id, statstype)
+    def matches(self, aid, statstype):
+        data = self.fetchmatches(aid, statstype)
         history = ""
         if len(data) > 0:
             history = data[0]['history']
         hist = history.split(',')
-        matchids = [ int(x.split('|')[0]) for  x in hist ]
+        matchids = [int(x.split('|')[0]) for x in hist]
         matchids = sorted(matchids, reverse=True)
         return matchids
 
@@ -226,9 +235,11 @@ class HttpDataProvider(DataProvider):
         """
         data = {}
         limit = limit if limit else len(matchids)
+        heroname = None
+        aid = None
         if id_hero:
-            id, heroname = id_hero
-            id = self.nick2id(id)
+            aid, heroname = id_hero
+            aid = self.nick2id(aid)
 
         i = 0
         while len(data) < limit and i < len(matchids):
@@ -243,16 +254,16 @@ class HttpDataProvider(DataProvider):
             else:
                 matchdata = self.fetch('match/summ/matchid/{id}'.format(id=matchid))
                 matchstats = self.fetch('match/all/matchid/{id}'.format(id=matchid))
-                matchdata.append(matchstats[0][0]) # settings
-                matchdata.append(matchstats[1]) # items
-                matchdata.append(matchstats[2]) # player stats
+                matchdata.append(matchstats[0][0])  # settings
+                matchdata.append(matchstats[1])  # items
+                matchdata.append(matchstats[2])  # player stats
                 with gzip.open(matchpath, 'wt+') as f:
                     f.write(json.dumps(matchdata))
             if id_hero:
                 playerstats = matchdata[3]
                 for stats in playerstats:
-                    if id == int(stats['account_id']):
-                        playedhero = self.heroid2name(stats['hero_id'],full=True).lower()
+                    if aid == int(stats['account_id']):
+                        playedhero = self.heroid2name(stats['hero_id'], full=True).lower()
                         if heroname in playedhero:
                             data[matchid] = matchdata
                         break
@@ -260,4 +271,3 @@ class HttpDataProvider(DataProvider):
                 data[matchid] = matchdata
             i += 1
         return data
-

@@ -20,14 +20,15 @@ from datetime import datetime, timedelta, tzinfo
 
 import time as _time
 
-STDOFFSET = timedelta(seconds = -_time.timezone)
+STDOFFSET = timedelta(seconds=-_time.timezone)
 if _time.daylight:
-    DSTOFFSET = timedelta(seconds = -_time.altzone)
+    DSTOFFSET = timedelta(seconds=-_time.altzone)
 else:
     DSTOFFSET = STDOFFSET
 
 DSTDIFF = DSTOFFSET - STDOFFSET
 ZERO = timedelta(0)
+
 
 class LocalTimezone(tzinfo):
 
@@ -55,6 +56,7 @@ class LocalTimezone(tzinfo):
         return tt.tm_isdst > 0
 
 Local = LocalTimezone()
+
 
 def parsedate(datestr):
     return datetime.strptime(datestr + " -0600",  "%Y-%m-%d %H:%M:%S %z")

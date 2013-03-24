@@ -33,11 +33,11 @@ class Player(object):
     PlayerHeroHeaderFormat = "{hero:<10s} {use:<3s} {perc:<2s} {k:3s} " \
         "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {kpg:<5s} " \
         "{dpg:<5s} {apg:<5s} {gpm:<3s} {wpg:<3s}"
-    PlayerHeroHeader = PlayerHeroHeaderFormat.format(hero='Hero',use='Use',
-                                                          perc=' %',k='  K',d='  D',
-                                                          a='  A',kdr='KDR',w='W',
-                                                          l='L',kpg='KPG',dpg='DPG',
-                                                          apg='APG',gpm='GPM',
+    PlayerHeroHeader = PlayerHeroHeaderFormat.format(hero='Hero', use='Use',
+                                                          perc=' %', k='  K', d='  D',
+                                                          a='  A', kdr='KDR', w='W',
+                                                          l='L', kpg='KPG', dpg='DPG',
+                                                          apg='APG', gpm='GPM',
                                                           wpg='WPG')
 
     PlayerHeroFormat = "{hero:<10s} {use:3d} {perc:2d} {k:3d} " \
@@ -51,34 +51,34 @@ class Player(object):
     def id(self):
         return int(self.data['account_id'])
 
-    def rating(self, type = Stats.DefaultStatsType):
-        if 'public' != type:
-            return int(float(self.data[self.StatsMapping[type] + '_amm_team_rating']))
+    def rating(self, type_=Stats.DefaultStatsType):
+        if 'public' != type_:
+            return int(float(self.data[self.StatsMapping[type_] + '_amm_team_rating']))
         return int(float(self.data['acc_pub_skill']))
 
-    def kills(self, type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_herokills'])
+    def kills(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_herokills'])
 
-    def deaths(self, type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_deaths'])
+    def deaths(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_deaths'])
 
-    def assists(self,  type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_heroassists'])
+    def assists(self,  type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_heroassists'])
 
-    def gamesplayed(self, type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_games_played'])
+    def gamesplayed(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_games_played'])
 
-    def wards(self, type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_wards'])
+    def wards(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_wards'])
 
-    def denies(self, type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_denies'])
+    def denies(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_denies'])
 
-    def wins(self, type = Stats.DefaultStatsType):
-        return int(self.data[Player.StatsMapping[type] + '_wins'])
+    def wins(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_wins'])
 
-    def playerheros(self, dp, type = Stats.DefaultStatsType, sortby='use', order='asc'):
-        matches = dp.matches(self.id(), type)
+    def playerheros(self, dp, type_=Stats.DefaultStatsType, sortby='use', order='asc'):
+        matches = dp.matches(self.id(), type_)
         playerhero = {}
         matchdata = dp.fetchmatchdata(matches)
         for matchid in matchdata:
@@ -109,46 +109,50 @@ class Player(object):
         # finalize stats so we can sort all values easily after
         for heroid in playerhero:
             stats = playerhero[heroid]
-            stats['perc'] = int(stats['use']/len(matchdata) * 100)
-            stats['kdr'] = stats['k']/stats['d'] if stats['d'] > 0 else stats['k']
-            stats['kpg'] = stats['k']/stats['use']
-            stats['dpg'] = stats['d']/stats['use']
-            stats['apg'] = stats['a']/stats['use']
-            stats['wpg'] = stats['wards']/stats['use']
-            stats['gpm'] = int(stats['gold'] / (stats['playedtime']/60))
-        sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order=='asc')
+            stats['perc'] = int(stats['use'] / len(matchdata) * 100)
+            stats['kdr'] = stats['k'] / stats['d'] if stats['d'] > 0 else stats['k']
+            stats['kpg'] = stats['k'] / stats['use']
+            stats['dpg'] = stats['d'] / stats['use']
+            stats['apg'] = stats['a'] / stats['use']
+            stats['wpg'] = stats['wards'] / stats['use']
+            stats['gpm'] = int(stats['gold'] / (stats['playedtime'] / 60))
+        sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order == 'asc')
         return sortedstats
 
 
     @staticmethod
-    def header(type=Stats.DefaultStatsType):
-        return Player.HeaderFormat.format(nick="Nick",
-                              mmr="MMR",
-                              k="K",
-                              d="D",
-                              a="A",
-                              wg="W/G",
-                              cd="CD",
-                              kdr="KDR",
-                              gp="GP",
-                              wp="W%")
+    def header(type_=Stats.DefaultStatsType):
+        return Player.HeaderFormat.format(
+            nick="Nick",
+            mmr="MMR",
+            k="K",
+            d="D",
+            a="A",
+            wg="W/G",
+            cd="CD",
+            kdr="KDR",
+            gp="GP",
+            wp="W%")
 
-    def str(self, dp, type=Stats.DefaultStatsType):
-        return Player.PlayerFormat.format(nick=dp.id2nick(self.id()),
-                          rank=self.rating(type),
-                          k=self.kills(type),
-                          d=self.deaths(type),
-                          a=self.assists(type),
-                          wg=self.wards(type)/self.gamesplayed(type),
-                          cd=self.denies(type)/self.gamesplayed(type),
-                          kdr=self.kills(type)/self.deaths(type),
-                          pg=self.gamesplayed(type),
-                          wp=self.wins(type)/self.gamesplayed(type)*100)
+    def str(self, dp, type_=Stats.DefaultStatsType):
+        return Player.PlayerFormat.format(nick=dp.id2nick(
+            self.id()),
+            rank=self.rating(type_),
+            k=self.kills(type_),
+            d=self.deaths(type_),
+            a=self.assists(type_),
+            wg=self.wards(type_) / self.gamesplayed(type_),
+            cd=self.denies(type_) / self.gamesplayed(type_),
+            kdr=self.kills(type_) / self.deaths(type_),
+            pg=self.gamesplayed(type_),
+            wp=self.wins(type_) / self.gamesplayed(type_) * 100)
 
 
 class Match(object):
-    MatchesHeader = "{mid:10s} {gt:2s} {gd:4s} {date:16s} {k:>2s} {d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
-    MatchesFormat = "{mid:<10d} {gt:2s} {gd:4s} {date:15s} {k:2d} {d:2d} {a:2d} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
+    MatchesHeader = "{mid:10s} {gt:2s} {gd:4s} {date:16s} {k:>2s} " \
+        "{d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
+    MatchesFormat = "{mid:<10d} {gt:2s} {gd:4s} {date:15s} {k:2d} " \
+        "{d:2d} {a:2d} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
 
     def __init__(self, data):
         self.data = data
@@ -179,19 +183,19 @@ class Match(object):
 
     def players(self, team=None):
         if team:
-            iteam = 1 if team=="legion" else 2
-            return { int(data['account_id']): data for data in self.data[3] if int(data['team'])==iteam }
-        return { int(data['account_id']): data for data in self.data[3] }
+            iteam = 1 if team == "legion" else 2
+            return {int(data['account_id']): data for data in self.data[3] if int(data['team']) == iteam}
+        return {int(data['account_id']): data for data in self.data[3]}
 
-    def playermatchstats(self, id):
+    def playermatchstats(self, id_):
         playerstats = self.data[3]
         for stats in playerstats:
-            if int(id) == int(stats['account_id']):
+            if int(id_) == int(stats['account_id']):
                 return stats
         return None
 
-    def playerstat(self, id, stat):
-        stats = self.playermatchstats(id)
+    def playerstat(self, id_, stat):
+        stats = self.playermatchstats(id_)
         return int(stats[stat])
 
     def mid(self):
@@ -204,71 +208,75 @@ class Match(object):
         date = parsedate(self.data[0]['mdt'])
         return date.astimezone(Local).isoformat(' ')[:16]
 
-    def matchesstr(self, id, dp):
+    def matchesstr(self, id_, dp):
         matchsum = self.data[0]
-        return Match.MatchesFormat.format(mid=int(matchsum['match_id']),
+        return Match.MatchesFormat.format(
+            mid=int(matchsum['match_id']),
             gt=self.gametype(),
             gd=str(self.gameduration())[:4],
             date=self.gamedatestr(),
-            k=self.playerstat(id, 'herokills'),
-            d=self.playerstat(id, 'deaths'),
-            a=self.playerstat(id, 'heroassists'),
-            hero=dp.heroid2name(self.playerstat(id, 'hero_id'))[:5],
-            wl="W" if int(self.playerstat(id, 'wins')) > 0 else "L",
-            wa=self.playerstat(id, 'wards'),
-            ck=self.playerstat(id, 'teamcreepkills') + self.playerstat(id, 'neutralcreepkills'),
-            cd=self.playerstat(id, 'denies'),
-            gpm=int(self.playerstat(id, 'gold') / (self.gameduration().total_seconds()/60)))
+            k=self.playerstat(id_, 'herokills'),
+            d=self.playerstat(id_, 'deaths'),
+            a=self.playerstat(id_, 'heroassists'),
+            hero=dp.heroid2name(self.playerstat(id_, 'hero_id'))[:5],
+            wl="W" if int(self.playerstat(id_, 'wins')) > 0 else "L",
+            wa=self.playerstat(id_, 'wards'),
+            ck=self.playerstat(id_, 'teamcreepkills') + self.playerstat(id_, 'neutralcreepkills'),
+            cd=self.playerstat(id_, 'denies'),
+            gpm=int(self.playerstat(id_, 'gold') / (self.gameduration().total_seconds() / 60)))
 
     def matchstr(self, dp):
         legionplayers = self.players(team="legion")
         hellbourneplayers = self.players(team='hellbourne')
 
-        outstr = "Match {mid} -- {date} - GD: {gd}\n".format(mid=self.mid(), date=self.gamedatestr(), gd=self.gameduration())
-        legion="Legion(W)" if int(legionplayers[next(iter(legionplayers))]['wins']) > 0 else "Legion(L)"
-        hellbourne="Hellbourne(W)" if int(hellbourneplayers[next(iter(hellbourneplayers))]['wins']) > 0 else "Hellbourne(L)"
+        outstr = "Match {mid} -- {date} - GD: {gd}\n".format(
+            mid=self.mid(), date=self.gamedatestr(), gd=self.gameduration())
+        legion = "Legion(W)" if int(legionplayers[next(iter(legionplayers))]['wins']) > 0 else "Legion(L)"
+        hellbourne = "Hellbourne(L)"
+        if int(hellbourneplayers[next(iter(hellbourneplayers))]['wins']) > 0:
+            hellbourne = "Hellbourne(W)"
         header = "{legion:14s} {hero:5s} {level:>2s} {kills:>2s} {deaths:>2s} {assists:>2s} "
         header += "{ck:>3s} {cd:>2s} {wards:>2s} {gpm:>3s} {gl2d:>4s}  "
         header += "{hell:14s} {hero:5s} {level:>2s} {kills:>2s} {deaths:>2s} {assists:>2s} "
         header += "{ck:>3s} {cd:>2s} {wards:>2s} {gpm:>3s} {gl2d:>4s}\n"
-        outstr += header.format(legion=legion, hero="Hero", level="LV", kills="K", deaths="D", assists="A", hell=hellbourne, ck="CK", cd="CD", wards="W", gpm="GPM", gl2d="GL2D")
+        outstr += header.format(legion=legion, hero="Hero", level="LV", kills="K", deaths="D",
+                                assists="A", hell=hellbourne, ck="CK", cd="CD", wards="W", gpm="GPM", gl2d="GL2D")
 
         playerformat = "{nick:14s} {hero:5s} {lvl:2d} {k:2d} {d:2d} {a:2d} {ck:3d} {cd:2d} {wa:2d} {gpm:3d} {gl2d:4d}"
         legionstr = []
-        for id in legionplayers.keys():
-            dp.fetch
+        for id_ in legionplayers.keys():
             legionstr.append(playerformat.format(
-                      nick=dp.id2nick(id),
-                      hero=dp.heroid2name(self.playerstat(id, 'hero_id'))[:5],
-                      lvl=self.playerstat(id, 'level'),
-                      k=self.playerstat(id, 'herokills'),
-                      d=self.playerstat(id, 'deaths'),
-                      a=self.playerstat(id, 'heroassists'),
-                      ck=self.playerstat(id, 'teamcreepkills') + self.playerstat(id, 'neutralcreepkills'),
-                      cd=self.playerstat(id, 'denies'),
-                      wa=self.playerstat(id, 'wards'),
-                      gpm=int(self.playerstat(id, 'gold') / (self.gameduration().total_seconds()/60)),
-                      gl2d=self.playerstat(id, 'goldlost2death')
-                      ))
+                nick=dp.id2nick(id_),
+                hero=dp.heroid2name(self.playerstat(id_, 'hero_id'))[:5],
+                lvl=self.playerstat(id_, 'level'),
+                k=self.playerstat(id_, 'herokills'),
+                d=self.playerstat(id_, 'deaths'),
+                a=self.playerstat(id_, 'heroassists'),
+                ck=self.playerstat(id_, 'teamcreepkills') + self.playerstat(id_, 'neutralcreepkills'),
+                cd=self.playerstat(id_, 'denies'),
+                wa=self.playerstat(id_, 'wards'),
+                gpm=int(self.playerstat(id_, 'gold') / (self.gameduration().total_seconds() / 60)),
+                gl2d=self.playerstat(id_, 'goldlost2death')
+            ))
 
         hellstr = []
-        for id in hellbourneplayers.keys():
+        for id_ in hellbourneplayers.keys():
             hellstr.append(playerformat.format(
-                      nick=dp.id2nick(id),
-                      hero=dp.heroid2name(self.playerstat(id, 'hero_id'))[:5],
-                      lvl=self.playerstat(id, 'level'),
-                      k=self.playerstat(id, 'herokills'),
-                      d=self.playerstat(id, 'deaths'),
-                      a=self.playerstat(id, 'heroassists'),
-                      ck=self.playerstat(id, 'teamcreepkills') + self.playerstat(id, 'neutralcreepkills'),
-                      cd=self.playerstat(id, 'denies'),
-                      wa=self.playerstat(id, 'wards'),
-                      gpm=int(self.playerstat(id, 'gold') / (self.gameduration().total_seconds()/60)),
-                      gl2d=self.playerstat(id, 'goldlost2death')
-                      ))
+                nick=dp.id2nick(id_),
+                hero=dp.heroid2name(self.playerstat(id_, 'hero_id'))[:5],
+                lvl=self.playerstat(id_, 'level'),
+                k=self.playerstat(id_, 'herokills'),
+                d=self.playerstat(id_, 'deaths'),
+                a=self.playerstat(id_, 'heroassists'),
+                ck=self.playerstat(id_, 'teamcreepkills') + self.playerstat(id_, 'neutralcreepkills'),
+                cd=self.playerstat(id_, 'denies'),
+                wa=self.playerstat(id_, 'wards'),
+                gpm=int(self.playerstat(id_, 'gold') / (self.gameduration().total_seconds() / 60)),
+                gl2d=self.playerstat(id_, 'goldlost2death')
+            ))
 
-        size = max(len(hellstr),len(legionstr))
-        for i in range(0,size):
+        size = max(len(hellstr), len(legionstr))
+        for i in range(0, size):
             if i < len(legionstr):
                 outstr += legionstr[i] + "  " + hellstr[i] + '\n'
             else:
