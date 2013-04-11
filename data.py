@@ -51,6 +51,9 @@ class Player(object):
     def id(self):
         return int(self.data['account_id'])
 
+    def nickname(self):
+        return self.nickname
+
     def rating(self, type_=Stats.DefaultStatsType):
         if 'public' != type_:
             return int(float(self.data[self.StatsMapping[type_] + '_amm_team_rating']))
