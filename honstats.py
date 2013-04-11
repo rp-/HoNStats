@@ -74,11 +74,12 @@ def playerherosscommand(args):
 
 
 def lastmatchescommand(args):
-    for id in args.id:
-        id_hero = (id, args.hero) if args.hero else None
-        matchids = args.dataprovider.matches(id, args.statstype)
-        matches = args.dataprovider.fetchmatchdata(matchids, limit=args.count, id_hero=id_hero)
-        print(args.dataprovider.id2nick(id))
+    for id_ in args.id:
+        id_hero = (id_, args.hero) if args.hero else None
+        matchids = args.dataprovider.matches(id_, args.statstype)
+        limit = args.limit if (args.limit or args.count) < args.count else args.count
+        matches = args.dataprovider.fetchmatchdata(matchids, limit=limit, id_hero=id_hero)
+        print(args.dataprovider.id2nick(id_))
         for mid in sorted(matches.keys(), reverse=True):
             match = Match(matches[mid])
             print(match.matchstr(args.dataprovider))
