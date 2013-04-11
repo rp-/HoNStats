@@ -122,9 +122,8 @@ class Player(object):
         sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order == 'asc')
         return sortedstats
 
-
     @staticmethod
-    def header(type_=Stats.DefaultStatsType):
+    def header():
         return Player.HeaderFormat.format(
             nick="Nick",
             mmr="MMR",
@@ -137,9 +136,9 @@ class Player(object):
             gp="GP",
             wp="W%")
 
-    def str(self, dp, type_=Stats.DefaultStatsType):
-        return Player.PlayerFormat.format(nick=dp.id2nick(
-            self.id()),
+    def str(self, type_=Stats.DefaultStatsType):
+        return Player.PlayerFormat.format(
+            nick=self.nickname,
             rank=self.rating(type_),
             k=self.kills(type_),
             d=self.deaths(type_),

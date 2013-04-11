@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+honstats console statistics program for Heroes of Newerth
+
 This file is part of honstats.
 
 honstats is free software: you can redistribute it and/or modify
@@ -24,32 +26,34 @@ import configparser
 from data import Player, Match
 from provider import HttpDataProvider
 
-"""honstats console statistics program for Heroes of Newerth
-"""
+
 def playercommand(args):
     print(Player.header())
 
-    for id in args.id:
+    for id_ in args.id:
         #print(url)
-        data = args.dataprovider.fetchplayer(id, args.statstype)
-        player = Player(id, data)
+        data = args.dataprovider.fetchplayer(id_, args.statstype)
+        nickname = args.dataprovider.id2nick(int(data['account_id']))
+        player = Player(nickname, data)
         #print(json.dumps(data))
-        print(player.str(args.dataprovider, args.statstype))
+        print(player.str())
+
 
 def matchescommand(args):
-    for id in args.id:
-        matchids = args.dataprovider.matches(id, args.statstype)
+    for id_ in args.id:
+        matchids = args.dataprovider.matches(id_, args.statstype)
 
         limit = args.limit if args.limit else len(matchids)
-        print(args.dataprovider.id2nick(id))
+        print(args.dataprovider.id2nick(id_))
         print(Match.headermatches())
         for i in range(limit):
             match = Match(args.dataprovider.fetchmatchdata([matchids[i]])[matchids[i]])
 #        matches = args.dataprovider.fetchmatchdata(matchids[:limit])
 #        for matchid in matchids[:limit]:
 #            match = Match(matches[matchid])
-            print(match.matchesstr(args.dataprovider.nick2id(id), args.dataprovider))
+            print(match.matchesstr(args.dataprovider.nick2id(id_), args.dataprovider))
         #print(json.dumps(history))
+
 
 def matchcommand(args):
     matches = args.dataprovider.fetchmatchdata(args.matchid)
@@ -59,13 +63,14 @@ def matchcommand(args):
 
 
 def playerherosscommand(args):
-    for id in args.id:
-        data = args.dataprovider.fetchplayer(id, args.statstype)
-        player = Player(id, data)
+    for id_ in args.id:
+        data = args.dataprovider.fetchplayer(id_, args.statstype)
+        nickname = args.dataprovider.id2nick(int(data['account_id']))
+        player = Player(nickname, data)
         stats = player.playerheros(args.dataprovider, args.statstype, args.sort_by, args.order)
 
         limit = args.limit if args.limit else len(stats)
-        print(args.dataprovider.id2nick(id))
+        print(args.dataprovider.id2nick(id_))
         print(Player.PlayerHeroHeader)
         for i in range(limit):
             stat = stats[i]
@@ -83,6 +88,7 @@ def lastmatchescommand(args):
         for mid in sorted(matches.keys(), reverse=True):
             match = Match(matches[mid])
             print(match.matchstr(args.dataprovider))
+
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
@@ -109,9 +115,10 @@ def main():
     playerheroscmd = subparsers.add_parser('player-heros', help='Show stats for heros played')
     playerheroscmd.set_defaults(func=playerherosscommand)
     playerheroscmd.add_argument('id', nargs='+', help='Player nickname or hon id')
-    playerheroscmd.add_argument('-b', "--sort-by", choices=['use','kdr','k','d','a','kpg','dpg','apg', 'gpm', 'wpg', 'wins', 'losses'],
+    playerheroscmd.add_argument('-b', "--sort-by", choices=['use', 'kdr', 'k', 'd', 'a',
+                                                            'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses'],
                                 default='use', help='Sort by specified stat')
-    playerheroscmd.add_argument('-o', "--order", choices=['asc','desc'], default='asc', help='sort order')
+    playerheroscmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='asc', help='sort order')
 
     lastmatchescmd = subparsers.add_parser('lastmatches', help='lastmatches for a player')
     lastmatchescmd.set_defaults(func=lastmatchescommand)
