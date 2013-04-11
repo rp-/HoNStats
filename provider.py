@@ -77,7 +77,7 @@ class DataProvider(object):
 class HttpDataProvider(DataProvider):
     StatsMapping = {'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
 
-    def __init__(self, url='http://api.heroesofnewerth.com/', token=None, cachedir="~/.honstats"):
+    def __init__(self, url='api.heroesofnewerth.com', token=None, cachedir="~/.honstats"):
         self.url = url
         self.token = token
         self.cachedir = os.path.abspath(os.path.expanduser(cachedir))
@@ -103,7 +103,7 @@ class HttpDataProvider(DataProvider):
             cursor.close()
             if row:
                 return int(row[0])
-            data = self.fetch('player_statistics/ranked/nickname/' + nick)
+            data = self.fetch('/player_statistics/ranked/nickname/' + nick)
             # insert the real nick into database, case sensitiv
             self.id2nick(int(data['account_id']))
             return int(data['account_id'])
@@ -143,7 +143,7 @@ class HttpDataProvider(DataProvider):
         cursor.close()
         if row:
             return row[0]
-        data = self.fetch('heroes/id/{id}'.format(id=aid))
+        data = self.fetch('/heroes/id/{id}'.format(id=aid))
         name = data['disp_name'].strip()
         self.db.execute('INSERT INTO hero VALUES( :id, :name);',  {'id': aid, 'name': name})
         self.db.commit()
@@ -178,7 +178,7 @@ class HttpDataProvider(DataProvider):
         cursor.close()
         if row:
             return json.loads(row[0])
-        data = self.fetch('player_statistics/' + statstype + DataProvider.nickoraccountid(aid))
+        data = self.fetch('/player_statistics/' + statstype + DataProvider.nickoraccountid(aid))
 
 #        # check if the data really changed
 #        cursor = self.db.cursor()
@@ -207,7 +207,7 @@ class HttpDataProvider(DataProvider):
             with gzip.open(playermatches, 'rt') as f:
                 data = json.load(f)
         else:
-            path = 'match_history/' + statstype + DataProvider.nickoraccountid(aid)
+            path = '/match_history/' + statstype + DataProvider.nickoraccountid(aid)
             data = self.fetch(path)
             with gzip.open(playermatches, 'wt+') as f:
                 f.write(json.dumps(data))
@@ -252,8 +252,8 @@ class HttpDataProvider(DataProvider):
                 with gzip.open(matchpath, 'rt') as f:
                     matchdata = json.load(f)
             else:
-                matchdata = self.fetch('match/summ/matchid/{id}'.format(id=matchid))
-                matchstats = self.fetch('match/all/matchid/{id}'.format(id=matchid))
+                matchdata = self.fetch('/match/summ/matchid/{id}'.format(id=matchid))
+                matchstats = self.fetch('/match/all/matchid/{id}'.format(id=matchid))
                 matchdata.append(matchstats[0][0])  # settings
                 matchdata.append(matchstats[1])  # items
                 matchdata.append(matchstats[2])  # player stats

@@ -87,7 +87,7 @@ def lastmatchescommand(args):
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
     parser.add_argument('-q', '--quiet', action='store_true', help='Limit exception output to one liners')
-    parser.add_argument('--host', default='http://api.heroesofnewerth.com/', help='statistic host provider')
+    parser.add_argument('--host', default='api.heroesofnewerth.com', help='statistic host provider')
     parser.add_argument('-l', '--limit', type=int, help='Limit output to the given number')
     parser.add_argument('-t', '--token', help="hon statistics token")
     parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'],
@@ -136,8 +136,10 @@ def main():
         else:
             args.token = cp.get('auth', 'token')
 
+        host = "http://{host}".format(host=cp.get('auth', 'host', fallback=args.host))
+
         if 'func' in args:
-            args.dataprovider = HttpDataProvider(args.host, token=args.token,  cachedir=cp.get('cache', 'directory'))
+            args.dataprovider = HttpDataProvider(host, token=args.token,  cachedir=cp.get('cache', 'directory'))
             args.func(args)
         else:
             parser.print_help()
