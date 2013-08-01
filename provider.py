@@ -43,6 +43,8 @@ name TEXT
 );
 """
 
+class NoResultsError(Exception): pass
+
 
 class DataProvider(object):
     MatchCacheDir = 'match'
@@ -155,6 +157,8 @@ class HttpDataProvider(DataProvider):
         try:
             resp = urllib.request.urlopen(url)
         except HTTPError as e:
+            if e.code == 404:
+                raise NoResultsError()
             if e.code == 429:  # too much requests
                 time.sleep(0.1)  # this might be a bit harsh, but fetch until we get what we want
                 return self.fetch(path)
@@ -253,13 +257,17 @@ class HttpDataProvider(DataProvider):
                     matchdata = json.load(f)
             else:
                 matchdata = self.fetch('/match/summ/matchid/{id}'.format(id=matchid))
-                matchstats = self.fetch('/match/all/matchid/{id}'.format(id=matchid))
-                matchdata.append(matchstats[0][0])  # settings
-                matchdata.append(matchstats[1])  # items
-                matchdata.append(matchstats[2])  # player stats
-                with gzip.open(matchpath, 'wt+') as f:
-                    f.write(json.dumps(matchdata))
-            if id_hero:
+                try:
+                    matchstats = self.fetch('/match/all/matchid/{id}'.format(id=matchid))
+                    matchdata.append(matchstats[0][0])  # settings
+                    matchdata.append(matchstats[1])  # items
+                    matchdata.append(matchstats[2])  # player stats
+                    with gzip.open(matchpath, 'wt+') as f:
+                        f.write(json.dumps(matchdata))
+                except NoResultsError as e:
+                    matchdata = None
+
+            if id_hero and matchdata:
                 playerstats = matchdata[3]
                 for stats in playerstats:
                     if aid == int(stats['account_id']):
@@ -271,3 +279,4 @@ class HttpDataProvider(DataProvider):
                 data[matchid] = matchdata
             i += 1
         return data
+

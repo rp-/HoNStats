@@ -85,7 +85,7 @@ class Player(object):
         playerhero = {}
         matchdata = dp.fetchmatchdata(matches)
         for matchid in matchdata:
-            match = Match(matchdata[matchid])
+            match = Match.creatematch(matchdata[matchid])
             heroid = int(match.playerstat(self.id(), 'hero_id'))
             if not heroid in playerhero:
                 playerhero[heroid] = {'heroid': heroid,
@@ -149,8 +149,40 @@ class Player(object):
             pg=self.gamesplayed(type_),
             wp=self.wins(type_) / self.gamesplayed(type_) * 100)
 
+class EmptyMatch():
+    def gametype(self):
+        return ""
 
-class Match(object):
+    def players(self, team=None):
+        return {}
+
+    def playermatchstats(self, id_):
+        return None
+
+    def playerstat(self, id_, stat):
+        return 0
+
+    def mid(self):
+        return 0
+
+    def gameduration(self):
+        return timedelta(seconds=0)
+
+    def gamedatestr(self):
+        date = datetime.now()
+        return date.astimezone(Local).isoformat(' ')[:16]
+
+    def matchesstr(self, id_, dp):
+        return "Unable to fetch"
+
+    def matchstr(self, dp):
+        return "Unable to fetch"
+
+    def __repr__(self):
+        return "EmptyMatch()"
+
+
+class Match(EmptyMatch):
     MatchesHeader = "{mid:10s} {gt:2s} {gd:4s} {date:16s} {k:>2s} " \
         "{d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
     MatchesFormat = "{mid:<10d} {gt:2s} {gd:4s} {date:15s} {k:2d} " \
@@ -158,6 +190,12 @@ class Match(object):
 
     def __init__(self, data):
         self.data = data
+
+    @staticmethod
+    def creatematch(data):
+        if data:
+            return Match(data)
+        return EmptyMatch()
 
     @staticmethod
     def headermatches():
@@ -176,6 +214,9 @@ class Match(object):
                                           gpm="GPM")
 
     def gametype(self):
+        if not self.data:
+            return "NA"
+
         options = self.data[1]
         if int(options['ap']) > 0:
             return "AP"
