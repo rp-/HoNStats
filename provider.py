@@ -126,13 +126,11 @@ class HttpDataProvider(DataProvider):
             if row:
                 return row[0]
 
-            resp = urllib.request.urlopen('http://www.hondmg.com/api/id_to_nick/' + str(int(aid)))
-            reply = json.loads(resp.read().decode())
-            resp.close()
-            if str(aid) in reply:
-                self.db.execute('INSERT INTO player VALUES( :id, :nick );', {'id': aid, 'nick': reply[str(aid)]})
-                self.db.commit()
-                return reply[str(aid)]
+            data = self.fetch('/player_statistics/ranked/accountid/' + str(aid))
+
+            self.db.execute('INSERT INTO player VALUES( :id, :nick );', {'id': aid, 'nick': data['nickname']})
+            self.db.commit()
+            return data['nickname']
 
         return str(aid)
 
