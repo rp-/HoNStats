@@ -119,7 +119,7 @@ class Player(object):
             stats['apg'] = stats['a'] / stats['use']
             stats['wpg'] = stats['wards'] / stats['use']
             stats['gpm'] = int(stats['gold'] / (stats['playedtime'] / 60))
-        sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order == 'asc')
+        sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order == 'desc')
         return sortedstats
 
     @staticmethod

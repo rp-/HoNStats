@@ -119,7 +119,7 @@ def main():
     playerheroscmd.add_argument('-b', "--sort-by", choices=['use', 'kdr', 'k', 'd', 'a',
                                                             'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses'],
                                 default='use', help='Sort by specified stat')
-    playerheroscmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='asc', help='sort order')
+    playerheroscmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='desc', help='sort order')
 
     lastmatchescmd = subparsers.add_parser('lastmatches', help='lastmatches for a player')
     lastmatchescmd.set_defaults(func=lastmatchescommand)
