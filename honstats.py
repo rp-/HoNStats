@@ -23,7 +23,7 @@ import os
 import argparse
 import configparser
 
-from data import Player, Match
+from data import Player, Match, Hero
 from provider import HttpDataProvider
 
 
@@ -90,6 +90,14 @@ def lastmatchescommand(args):
             match = Match.creatematch(matches[mid])
             print(match.matchstr(args.dataprovider))
 
+def heroescommand(args):
+    heroesdata = args.dataprovider.heroes()
+    heroids = list(heroesdata.keys())
+    heroids.sort(key=int)
+    limit = args.limit if args.limit else len(heroids)
+    for heroidindex in range(limit):
+        hero = Hero(heroesdata[heroids[heroidindex]])
+        print(hero.herostr())
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
@@ -126,6 +134,9 @@ def main():
     lastmatchescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
     lastmatchescmd.add_argument('-c', '--count', default=3, type=int, help='How many games')
     lastmatchescmd.add_argument('--hero', type=str, help='Filter to games with a certian hero')
+
+    heroescmd = subparsers.add_parser('heroes', help='Show hero statistics')
+    heroescmd.set_defaults(func=heroescommand)
 
     args = parser.parse_args()
 

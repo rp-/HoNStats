@@ -329,3 +329,16 @@ class Match(EmptyMatch):
 
     def __repr__(self):
         return json.dumps(self.data, indent=2)
+
+class Hero():
+    heroformat = "{heroid:>3s} {name:15s}"
+    def __init__(self, data):
+        self.data = data
+
+    def herostr(self):
+        return Hero.heroformat.format(
+                heroid=self.data['hero_id'],
+                name=self.data['disp_name'].strip())
+
+    def __repr__(self):
+        return json.dumps(self.data, indent=2)

@@ -278,3 +278,5 @@ class HttpDataProvider(DataProvider):
             i += 1
         return data
 
+    def heroes(self):
+        return self.fetch('/heroes/all')
