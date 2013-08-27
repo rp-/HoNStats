@@ -63,12 +63,12 @@ def matchcommand(args):
         print(match.matchstr(args.dataprovider))
 
 
-def playerherosscommand(args):
+def playerheroesscommand(args):
     for id_ in args.id:
         data = args.dataprovider.fetchplayer(id_, args.statstype)
         nickname = args.dataprovider.id2nick(int(data['account_id']))
         player = Player(nickname, data)
-        stats = player.playerheros(args.dataprovider, args.statstype, args.sort_by, args.order)
+        stats = player.playerheroes(args.dataprovider, args.statstype, args.sort_by, args.order)
 
         limit = args.limit if args.limit else len(stats)
         print(args.dataprovider.id2nick(id_))
@@ -121,13 +121,13 @@ def main():
     matchcmd.set_defaults(func=matchcommand)
     matchcmd.add_argument('matchid', nargs='+', help='HoN match id')
 
-    playerheroscmd = subparsers.add_parser('player-heros', help='Show stats for heros played')
-    playerheroscmd.set_defaults(func=playerherosscommand)
-    playerheroscmd.add_argument('id', nargs='+', help='Player nickname or hon id')
-    playerheroscmd.add_argument('-b', "--sort-by", choices=['use', 'kdr', 'k', 'd', 'a',
+    playerheroescmd = subparsers.add_parser('player-heroes', help='Show stats for heroes played')
+    playerheroescmd.set_defaults(func=playerheroesscommand)
+    playerheroescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
+    playerheroescmd.add_argument('-b', "--sort-by", choices=['use', 'kdr', 'k', 'd', 'a',
                                                             'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses'],
                                 default='use', help='Sort by specified stat')
-    playerheroscmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='desc', help='sort order')
+    playerheroescmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='desc', help='sort order')
 
     lastmatchescmd = subparsers.add_parser('lastmatches', help='lastmatches for a player')
     lastmatchescmd.set_defaults(func=lastmatchescommand)

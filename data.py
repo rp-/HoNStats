@@ -80,7 +80,7 @@ class Player(object):
     def wins(self, type_=Stats.DefaultStatsType):
         return int(self.data[Player.StatsMapping[type_] + '_wins'])
 
-    def playerheros(self, dp, type_=Stats.DefaultStatsType, sortby='use', order='asc'):
+    def playerheroes(self, dp, type_=Stats.DefaultStatsType, sortby='use', order='asc'):
         matches = dp.matches(self.id(), type_)
         playerhero = {}
         matchdata = dp.fetchmatchdata(matches)
