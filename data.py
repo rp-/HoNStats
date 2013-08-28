@@ -272,8 +272,15 @@ class Match(EmptyMatch):
         legionplayers = self.players(team="legion")
         hellbourneplayers = self.players(team='hellbourne')
 
-        outstr = "Match {mid} -- {date} - GD: {gd}\n".format(
-            mid=self.mid(), date=self.gamedatestr(), gd=self.gameduration())
+        legionkills = sum( [self.playerstat(x, 'herokills') for x in legionplayers.keys()])
+        hellbournekills = sum( [self.playerstat(x, 'herokills') for x in hellbourneplayers.keys()])
+        outstr = "Match {mid} -- {date} - GD: {gd} - kills: {legkills}:{hellkills}\n".format(
+            mid=self.mid(),
+            date=self.gamedatestr(),
+            gd=self.gameduration(),
+            legkills=legionkills,
+            hellkills=hellbournekills
+            )
         legion = "Legion(W)" if int(legionplayers[next(iter(legionplayers))]['wins']) > 0 else "Legion(L)"
         hellbourne = "Hellbourne(L)"
         if int(hellbourneplayers[next(iter(hellbourneplayers))]['wins']) > 0:
