@@ -115,6 +115,7 @@ class Player(object):
         # finalize stats so we can sort all values easily after
         for heroid in playerhero:
             stats = playerhero[heroid]
+            playedtime = stats['playedtime'] if stats['playedtime'] != 0 else 1
             stats['perc'] = int(stats['use'] / len(matchdata) * 100)
             stats['kdr'] = stats['k'] / stats['d'] if stats['d'] > 0 else stats['k']
             stats['kpg'] = stats['k'] / stats['use']
