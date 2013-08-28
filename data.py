@@ -27,8 +27,8 @@ class Stats(object):
 
 class Player(object):
     StatsMapping = {'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
-    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wp:<2s}"
-    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wp:2.0f}"
+    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wins:<5s} {losses:<6s} {wp:<2s}"
+    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wins:<5d} {losses:<6d} {wp:2.0f}"
 
     PlayerHeroHeaderFormat = "{hero:<10s} {use:<3s} {perc:<2s} {k:3s} " \
         "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {kpg:<5s} " \
@@ -79,6 +79,9 @@ class Player(object):
 
     def wins(self, type_=Stats.DefaultStatsType):
         return int(self.data[Player.StatsMapping[type_] + '_wins'])
+
+    def losses(self, type_=Stats.DefaultStatsType):
+        return int(self.data[Player.StatsMapping[type_] + '_losses'])
 
     def playerheroes(self, dp, type_=Stats.DefaultStatsType, sortby='use', order='asc'):
         matches = dp.matches(self.id(), type_)
@@ -134,6 +137,8 @@ class Player(object):
             cd="CD",
             kdr="KDR",
             gp="GP",
+            wins="Wins",
+            losses="Losses",
             wp="W%")
 
     def str(self, type_=Stats.DefaultStatsType):
@@ -147,6 +152,8 @@ class Player(object):
             cd=self.denies(type_) / self.gamesplayed(type_),
             kdr=self.kills(type_) / self.deaths(type_),
             pg=self.gamesplayed(type_),
+            wins=self.wins(type_),
+            losses=self.losses(type_),
             wp=self.wins(type_) / self.gamesplayed(type_) * 100)
 
 class EmptyMatch():
