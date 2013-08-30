@@ -125,7 +125,7 @@ def main():
     playerheroescmd.set_defaults(func=playerheroesscommand)
     playerheroescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
     playerheroescmd.add_argument('-b', "--sort-by", choices=['use', 'kdr', 'k', 'd', 'a',
-                                                            'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses', 'wp'],
+                                                            'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses', 'wlr'],
                                 default='use', help='Sort by specified stat')
     playerheroescmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='desc', help='sort order')
 

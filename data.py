@@ -31,17 +31,17 @@ class Player(object):
     PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wins:<5d} {losses:<6d} {wp:2.0f}"
 
     PlayerHeroHeaderFormat = "{hero:<10s} {use:<3s} {perc:<2s} {k:3s} " \
-            "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {wp:4s} {kpg:<5s} " \
+            "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {wlr:4s} {kpg:<5s} " \
         "{dpg:<5s} {apg:<5s} {gpm:<3s} {wpg:<3s}"
     PlayerHeroHeader = PlayerHeroHeaderFormat.format(hero='Hero', use='Use',
                                                           perc=' %', k='  K', d='  D',
                                                           a='  A', kdr='KDR', w='W',
-                                                          l='L', wp='WP', kpg='KPG', dpg='DPG',
+                                                          l='L', wlr='WLR', kpg='KPG', dpg='DPG',
                                                           apg='APG', gpm='GPM',
                                                           wpg='WPG')
 
     PlayerHeroFormat = "{hero:<10s} {use:3d} {perc:2d} {k:3d} " \
-        "{d:3d} {a:3d} {kdr:<5.2f} {wins:<2d} {losses:<2d} {wp:<4.1f} {kpg:<5.2f} " \
+        "{d:3d} {a:3d} {kdr:<5.2f} {wins:<2d} {losses:<2d} {wlr:<4.1f} {kpg:<5.2f} " \
         "{dpg:<5.2f} {apg:<5.2f} {gpm:<3d} {wpg:<3.1f}"
 
     def __init__(self, nickname, data):
@@ -123,7 +123,7 @@ class Player(object):
             stats['apg'] = stats['a'] / stats['use']
             stats['wpg'] = stats['wards'] / stats['use']
             stats['gpm'] = int(stats['gold'] / (playedtime / 60))
-            stats['wp'] = stats['wins'] / stats['losses'] if stats['losses'] > 0 else stats['wins']
+            stats['wlr'] = stats['wins'] / stats['losses'] if stats['losses'] > 0 else stats['wins']
         sortedstats = sorted(playerhero.values(), key=lambda x: x[sortby], reverse=order == 'desc')
         return sortedstats
 
