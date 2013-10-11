@@ -47,7 +47,8 @@ class LocalTimezone(tzinfo):
     def tzname(self, dt):
         return _time.tzname[self._isdst(dt)]
 
-    def _isdst(self, dt):
+    @classmethod
+    def _isdst(cls, dt):
         tt = (dt.year, dt.month, dt.day,
               dt.hour, dt.minute, dt.second,
               dt.weekday(), 0, 0)

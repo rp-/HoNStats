@@ -43,7 +43,9 @@ name TEXT
 );
 """
 
-class NoResultsError(Exception): pass
+
+class NoResultsError(Exception):
+    pass
 
 
 class DataProvider(object):
@@ -276,7 +278,7 @@ class HttpDataProvider(DataProvider):
                     matchdata.append(matchstats[2])  # player stats
                     with gzip.open(matchpath, 'wt+') as f:
                         f.write(json.dumps(matchdata))
-                except NoResultsError as e:
+                except NoResultsError:
                     matchdata = None
 
             if id_hero and matchdata:

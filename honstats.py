@@ -90,6 +90,7 @@ def lastmatchescommand(args):
             match = Match.creatematch(matches[mid])
             print(match.matchstr(args.dataprovider))
 
+
 def heroescommand(args):
     heroesdata = args.dataprovider.heroes()
     heroids = list(heroesdata.keys())
@@ -98,6 +99,7 @@ def heroescommand(args):
     for heroidindex in range(limit):
         hero = Hero(heroesdata[heroids[heroidindex]])
         print(hero.herostr())
+
 
 def main():
     parser = argparse.ArgumentParser(description='honstats fetches and displays Heroes of Newerth statistics')
@@ -125,8 +127,8 @@ def main():
     playerheroescmd.set_defaults(func=playerheroesscommand)
     playerheroescmd.add_argument('id', nargs='+', help='Player nickname or hon id')
     playerheroescmd.add_argument('-b', "--sort-by", choices=['use', 'kdr', 'k', 'd', 'a',
-                                                            'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses', 'wlr'],
-                                default='use', help='Sort by specified stat')
+                                 'kpg', 'dpg', 'apg', 'gpm', 'wpg', 'wins', 'losses', 'wlr'],
+                                 default='use', help='Sort by specified stat')
     playerheroescmd.add_argument('-o', "--order", choices=['asc', 'desc'], default='desc', help='sort order')
 
     lastmatchescmd = subparsers.add_parser('lastmatches', help='lastmatches for a player')

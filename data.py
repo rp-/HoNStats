@@ -27,8 +27,10 @@ class Stats(object):
 
 class Player(object):
     StatsMapping = {'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
-    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wins:<5s} {losses:<6s} {wp:<2s}"
-    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wins:<5d} {losses:<6d} {wp:2.0f}"
+    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} " \
+        "{wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wins:<5s} {losses:<6s} {wp:<2s}"
+    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} " \
+        "{wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wins:<5d} {losses:<6d} {wp:2.0f}"
 
     PlayerHeroHeaderFormat = "{hero:<10s} {use:<3s} {perc:<2s} {k:3s} " \
             "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {wlr:4s} {kpg:<5s} " \
@@ -65,7 +67,7 @@ class Player(object):
     def deaths(self, type_=Stats.DefaultStatsType):
         return int(self.data[Player.StatsMapping[type_] + '_deaths'])
 
-    def assists(self,  type_=Stats.DefaultStatsType):
+    def assists(self, type_=Stats.DefaultStatsType):
         return int(self.data[Player.StatsMapping[type_] + '_heroassists'])
 
     def gamesplayed(self, type_=Stats.DefaultStatsType):
@@ -157,6 +159,7 @@ class Player(object):
             wins=self.wins(type_),
             losses=self.losses(type_),
             wp=self.wins(type_) / self.gamesplayed(type_) * 100)
+
 
 class EmptyMatch():
     def gametype(self):
@@ -281,8 +284,8 @@ class Match(EmptyMatch):
         legionplayers = self.players(team="legion")
         hellbourneplayers = self.players(team='hellbourne')
 
-        legionkills = sum( [self.playerstat(x, 'herokills') for x in legionplayers.keys()])
-        hellbournekills = sum( [self.playerstat(x, 'herokills') for x in hellbourneplayers.keys()])
+        legionkills = sum([self.playerstat(x, 'herokills') for x in legionplayers.keys()])
+        hellbournekills = sum([self.playerstat(x, 'herokills') for x in hellbourneplayers.keys()])
         outstr = "Match {mid} -- {date} - GD: {gd} - kills: {legkills}:{hellkills}\n".format(
             mid=self.mid(),
             date=self.gamedatestr(),
@@ -345,7 +348,6 @@ class Match(EmptyMatch):
 
     def __repr__(self):
         return json.dumps(self.data, indent=2)
-
 
 class Hero():
     heroformat = "{heroid:>3s} {name:15s}"
