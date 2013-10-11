@@ -59,4 +59,4 @@ Local = LocalTimezone()
 
 
 def parsedate(datestr):
-    return datetime.strptime(datestr + " -0600",  "%Y-%m-%d %H:%M:%S %z")
+    return datetime.strptime(datestr + " -0400",  "%Y-%m-%d %H:%M:%S %z")
