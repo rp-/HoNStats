@@ -55,16 +55,30 @@ class DataProvider(object):
     HeroNicks = {
         6: "Devo",
         9: "Elec",
+        14: "NH",
         15: "Swift",
         16: "BH",
+        25: "KotF",
+        26: "TDL",
+        27: "VJ",
         29: "WB",
         42: "MadM",
         43: "DS",
         104: "Hag",
+        108: "PR",
+        109: "SR",
+        114: "CD",
+        120: "WS",
         121: "FA",
+        124: "Chip",
         161: "Gladi",
+        162: "DR",
         185: "Sil",
-        192: "RA"
+        192: "RA",
+        195: "EW",
+        201: "DM",
+        209: "Salf",
+        234: "Benz"
     }
 
     @staticmethod
