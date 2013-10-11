@@ -177,9 +177,9 @@ class EmptyMatch():
     def gameduration(self):
         return timedelta(seconds=0)
 
-    def gamedatestr(self):
-        date = datetime.now()
-        return date.astimezone(Local).isoformat(' ')[:16]
+    #def gamedatestr(self):
+    #    date = datetime.now()
+    #    return date.astimezone(Local).isoformat(' ')[:16]
 
     def matchesstr(self, id_, dp):
         return "Unable to fetch"
@@ -346,8 +346,10 @@ class Match(EmptyMatch):
     def __repr__(self):
         return json.dumps(self.data, indent=2)
 
+
 class Hero():
     heroformat = "{heroid:>3s} {name:15s}"
+
     def __init__(self, data):
         self.data = data
 
