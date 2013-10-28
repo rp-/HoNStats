@@ -48,7 +48,7 @@ def matchescommand(args):
         print(Match.headermatches())
         for i in range(limit):
             matches = args.dataprovider.fetchmatchdata([matchids[i]])
-            match = Match.creatematch(matches[matchids[i]])
+            match = Match.creatematch(matchids[i], matches[matchids[i]])
 #        matches = args.dataprovider.fetchmatchdata(matchids[:limit])
 #        for matchid in matchids[:limit]:
 #            match = Match(matches[matchid])
@@ -59,7 +59,7 @@ def matchescommand(args):
 def matchcommand(args):
     matches = args.dataprovider.fetchmatchdata(args.matchid)
     for mid in args.matchid:
-        match = Match.creatematch(matches[mid])
+        match = Match.creatematch(mid, matches[mid])
         print(match.matchstr(args.dataprovider))
 
 
@@ -87,7 +87,7 @@ def lastmatchescommand(args):
         matches = args.dataprovider.fetchmatchdata(matchids, limit=limit, id_hero=id_hero)
         print(args.dataprovider.id2nick(id_))
         for mid in sorted(matches.keys(), reverse=True):
-            match = Match.creatematch(matches[mid])
+            match = Match.creatematch(mid, matches[mid])
             print(match.matchstr(args.dataprovider))
 
 

@@ -90,7 +90,7 @@ class Player(object):
         playerhero = {}
         matchdata = dp.fetchmatchdata(matches)
         for matchid in matchdata:
-            match = Match.creatematch(matchdata[matchid])
+            match = Match.creatematch(matchid, matchdata[matchid])
             heroid = int(match.playerstat(self.id(), 'hero_id'))
             if not heroid in playerhero:
                 playerhero[heroid] = {'heroid': heroid,
@@ -162,6 +162,9 @@ class Player(object):
 
 
 class EmptyMatch():
+    def __init__(self, mid=0):
+        self.data = [{'match_id':mid}]
+
     def gametype(self):
         return ""
 
@@ -175,23 +178,23 @@ class EmptyMatch():
         return 0
 
     def mid(self):
-        return 0
+        return int(self.data[0]['match_id'])
 
     def gameduration(self):
         return timedelta(seconds=0)
 
-    #def gamedatestr(self):
-    #    date = datetime.now()
-    #    return date.astimezone(Local).isoformat(' ')[:16]
+    def gamedatestr(self):
+        date = datetime.now()
+        return date.astimezone(Local).isoformat(' ')[:16]
 
     def matchesstr(self, id_, dp):
-        return "Unable to fetch"
+        return str(self.mid()) + ": Unable to fetch"
 
     def matchstr(self, dp):
-        return "Unable to fetch"
+        return str(self.mid()) + ": Unable to fetch"
 
     def __repr__(self):
-        return "EmptyMatch()"
+        return "EmptyMatch({mid})".format(mid=self.mid())
 
 
 class Match(EmptyMatch):
@@ -204,10 +207,10 @@ class Match(EmptyMatch):
         self.data = data
 
     @staticmethod
-    def creatematch(data):
+    def creatematch(mid, data):
         if data:
             return Match(data)
-        return EmptyMatch()
+        return EmptyMatch(mid)
 
     @staticmethod
     def headermatches():
@@ -252,9 +255,6 @@ class Match(EmptyMatch):
     def playerstat(self, id_, stat):
         stats = self.playermatchstats(id_)
         return int(stats[stat])
-
-    def mid(self):
-        return int(self.data[0]['match_id'])
 
     def gameduration(self):
         return timedelta(seconds=int(self.data[0]['time_played']))
