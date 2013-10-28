@@ -22,8 +22,9 @@ import sys
 import os
 import argparse
 import configparser
+import datetime
 
-from data import Player, Match, Hero
+from data import Player, Match, Hero, EmptyMatch
 from provider import HttpDataProvider
 
 
@@ -46,13 +47,46 @@ def matchescommand(args):
         limit = args.limit if args.limit else len(matchids)
         print(args.dataprovider.id2nick(id_))
         print(Match.headermatches())
+        avgdata = {'mid': 0,
+            'gt': "--",
+            'gd': datetime.timedelta(),
+            'date': '',
+            'k': 0,
+            'd': 0,
+            'a': 0,
+            'kdr': 0,
+            'hero': '',
+            'wl': '-',
+            'wa': 0,
+            'ck': 0,
+            'cd': 0,
+            'gpm': 0}
         for i in range(limit):
             matches = args.dataprovider.fetchmatchdata([matchids[i]])
             match = Match.creatematch(matchids[i], matches[matchids[i]])
-#        matches = args.dataprovider.fetchmatchdata(matchids[:limit])
-#        for matchid in matchids[:limit]:
-#            match = Match(matches[matchid])
+
+            # count average
+            if isinstance(match, Match):
+                matchdata = match.matchesdata(args.dataprovider.nick2id(id_), args.dataprovider)
+                avgdata['gd'] += matchdata['gd']
+                avgdata['k'] += matchdata['k']
+                avgdata['d'] += matchdata['d']
+                avgdata['a'] += matchdata['a']
+                avgdata['wa'] += matchdata['wa']
+                avgdata['ck'] += matchdata['ck']
+                avgdata['cd'] += matchdata['cd']
+                avgdata['gpm'] += matchdata['gpm']
             print(match.matchesstr(args.dataprovider.nick2id(id_), args.dataprovider))
+        avgdata['gd'] = str(avgdata['gd'] / limit)[:4]
+        avgdata['k'] = int(avgdata['k'] / limit)
+        avgdata['d'] = int(avgdata['d'] / limit)
+        avgdata['a'] = int(avgdata['a'] / limit)
+        avgdata['kdr'] = avgdata['k'] / avgdata['d']
+        avgdata['wa'] = int(avgdata['wa'] / limit)
+        avgdata['ck'] = int(avgdata['ck'] / limit)
+        avgdata['cd'] = int(avgdata['cd'] / limit)
+        avgdata['gpm'] = int(avgdata['gpm'] / limit)
+        print("average   " + Match.MatchesFormat.format(**avgdata)[10:])
         #print(json.dumps(history))
 
 

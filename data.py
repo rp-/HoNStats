@@ -199,9 +199,9 @@ class EmptyMatch():
 
 class Match(EmptyMatch):
     MatchesHeader = "{mid:10s} {gt:2s} {gd:4s} {date:16s} {k:>2s} " \
-        "{d:>2s} {a:>2s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
-    MatchesFormat = "{mid:<10d} {gt:2s} {gd:4s} {date:15s} {k:2d} " \
-        "{d:2d} {a:2d} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
+        "{d:>2s} {a:>2s} {kdr:5s} {hero:5s} {wl:3s} {wa:2s} {ck:>3s} {cd:2s} {gpm:3s}"
+    MatchesFormat = "{mid:<10d} {gt:2s} {gd:4s} {date:16s} {k:2d} " \
+        "{d:2d} {a:2d} {kdr:5.2f} {hero:5s}  {wl:1s}  {wa:2d} {ck:3d} {cd:2d} {gpm:3d}"
 
     def __init__(self, data):
         self.data = data
@@ -221,6 +221,7 @@ class Match(EmptyMatch):
                                           k="K",
                                           d="D",
                                           a="A",
+                                          kdr="KDR",
                                           hero="Hero",
                                           wl="W/L",
                                           wa="Wa",
@@ -263,22 +264,28 @@ class Match(EmptyMatch):
         date = parsedate(self.data[0]['mdt'])
         return date.astimezone(Local).isoformat(' ')[:16]
 
-    def matchesstr(self, id_, dp):
+    def matchesdata(self, id_, dp):
         matchsum = self.data[0]
-        return Match.MatchesFormat.format(
-            mid=int(matchsum['match_id']),
-            gt=self.gametype(),
-            gd=str(self.gameduration())[:4],
-            date=self.gamedatestr(),
-            k=self.playerstat(id_, 'herokills'),
-            d=self.playerstat(id_, 'deaths'),
-            a=self.playerstat(id_, 'heroassists'),
-            hero=dp.heroid2name(self.playerstat(id_, 'hero_id'))[:5],
-            wl="W" if int(self.playerstat(id_, 'wins')) > 0 else "L",
-            wa=self.playerstat(id_, 'wards'),
-            ck=self.playerstat(id_, 'teamcreepkills') + self.playerstat(id_, 'neutralcreepkills'),
-            cd=self.playerstat(id_, 'denies'),
-            gpm=int(self.playerstat(id_, 'gold') / (self.gameduration().total_seconds() / 60)))
+        return {'mid': int(matchsum['match_id']),
+            'gt': self.gametype(),
+            'gd': self.gameduration(),
+            'date': self.gamedatestr(),
+            'k': self.playerstat(id_, 'herokills'),
+            'd': self.playerstat(id_, 'deaths'),
+            'a': self.playerstat(id_, 'heroassists'),
+            'kdr': self.playerstat(id_, 'herokills') / self.playerstat(id_, 'deaths')
+                if self.playerstat(id_, 'deaths') > 0 else self.playerstat(id_, 'herokills'),
+            'hero': dp.heroid2name(self.playerstat(id_, 'hero_id'))[:5],
+            'wl': "W" if int(self.playerstat(id_, 'wins')) > 0 else "L",
+            'wa': self.playerstat(id_, 'wards'),
+            'ck': self.playerstat(id_, 'teamcreepkills') + self.playerstat(id_, 'neutralcreepkills'),
+            'cd': self.playerstat(id_, 'denies'),
+            'gpm': int(self.playerstat(id_, 'gold') / (self.gameduration().total_seconds() / 60))}
+
+    def matchesstr(self, id_, dp):
+        matchesdata = self.matchesdata(id_, dp)
+        matchesdata['gd'] = str(matchesdata['gd'])[:4]
+        return Match.MatchesFormat.format(**matchesdata)
 
     def matchstr(self, dp):
         legionplayers = self.players(team="legion")
