@@ -27,13 +27,13 @@ class Stats(object):
 
 class Player(object):
     StatsMapping = {'ranked': 'rnk', 'public': 'acc', 'casual': 'cs'}
-    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} " \
-        "{wg:<3s} {cd:<5s} {kdr:<5s} {gp:<4s} {wins:<5s} {losses:<6s} {wp:<2s}"
-    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} " \
-        "{wg:3.1f} {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wins:<5d} {losses:<6d} {wp:2.0f}"
+    HeaderFormat = "{nick:<10s} {mmr:<5s} {k:<6s} {d:<6s} {a:<6s} {wg:<3s}" \
+        " {cd:<5s} {kdr:<5s} {gp:<4s} {wins:<5s} {losses:<6s} {wp:<2s}"
+    PlayerFormat = "{nick:<10s} {rank:<5d} {k:<6d}/{d:<6d}/{a:<6d} {wg:3.1f}" \
+        " {cd:4.1f} {kdr:5.2f}  {pg:<4d} {wins:<5d} {losses:<6d} {wp:2.0f}"
 
     PlayerHeroHeaderFormat = "{hero:<10s} {use:<3s} {perc:<2s} {k:3s} " \
-            "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {wlr:4s} {kpg:<5s} " \
+        "{d:<3s} {a:<3s} {kdr:<5s} {w:<2s} {l:<2s} {wlr:4s} {kpg:<5s} " \
         "{dpg:<5s} {apg:<5s} {gpm:<3s} {wpg:<3s}"
     PlayerHeroHeader = PlayerHeroHeaderFormat.format(hero='Hero', use='Use',
                                                           perc=' %', k='  K', d='  D',
@@ -298,8 +298,7 @@ class Match(EmptyMatch):
             date=self.gamedatestr(),
             gd=self.gameduration(),
             legkills=legionkills,
-            hellkills=hellbournekills
-            )
+            hellkills=hellbournekills)
         legion = "Legion(W)" if int(legionplayers[next(iter(legionplayers))]['wins']) > 0 else "Legion(L)"
         hellbourne = "Hellbourne(L)"
         if int(hellbourneplayers[next(iter(hellbourneplayers))]['wins']) > 0:
@@ -364,8 +363,8 @@ class Hero():
 
     def herostr(self):
         return Hero.heroformat.format(
-                heroid=self.data['hero_id'],
-                name=self.data['disp_name'].strip())
+            heroid=self.data['hero_id'],
+            name=self.data['disp_name'].strip())
 
     def __repr__(self):
         return json.dumps(self.data, indent=2)
