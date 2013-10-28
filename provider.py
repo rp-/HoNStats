@@ -21,7 +21,6 @@ import urllib.request
 from urllib.error import HTTPError
 import gzip
 import time
-#import re
 
 DBCREATE = """
 CREATE TABLE IF NOT EXISTS player (
