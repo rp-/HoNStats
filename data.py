@@ -234,9 +234,9 @@ class Match(EmptyMatch):
             return "NA"
 
         options = self.data[1]
-        if int(options['ap']) > 0:
+        if 'ap' in options and int(options['ap']) > 0:
             return "AP"
-        if int(options['ar']) > 0:
+        if 'ar' in options and int(options['ar']) > 0:
             return "AR"
         return "SD"
 
