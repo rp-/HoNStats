@@ -143,6 +143,7 @@ def main():
     parser.add_argument('-t', '--token', help="hon statistics token")
     parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'],
                         default='ranked', help='Statstype to show')
+    parser.add_argument('--config', default='/etc/honstats', help='path to configuration file')
 
     subparsers = parser.add_subparsers(help='honstats commands')
     playercmd = subparsers.add_parser('player', help='Show player stats')
@@ -177,7 +178,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        configpath = '/etc/honstats'
+        configpath = args.config
         if not os.path.exists(configpath):
             configpath = os.path.expanduser('~/.config/honstats/config')
         if os.path.exists(configpath):
@@ -194,7 +195,7 @@ def main():
         host = "http://{host}".format(host=cp.get('auth', 'host', fallback=args.host))
 
         if 'func' in args:
-            args.dataprovider = HttpDataProvider(host, token=args.token,  cachedir=cp.get('cache', 'directory'))
+            args.dataprovider = HttpDataProvider(host, token=args.token, cachedir=cp.get('cache', 'directory'))
             args.func(args)
         else:
             parser.print_help()
