@@ -22,117 +22,40 @@ import sys
 import os
 import argparse
 import configparser
-import datetime
 
-from data import Player, Match, Hero, EmptyMatch
+import text
+import html
 from provider import HttpDataProvider
 
 
-def playercommand(args):
-    print(Player.header())
+def printoutput(output):
+    print(output, end='')
 
-    for id_ in args.id:
-        #print(url)
-        data = args.dataprovider.fetchplayer(id_, args.statstype)
-        nickname = args.dataprovider.id2nick(int(data['account_id']))
-        player = Player(nickname, data)
-        #print(json.dumps(data))
-        print(player.str())
+
+def playercommand(args):
+    printoutput(args.outputobj.playerinfo(args.id, args.statstype))
 
 
 def matchescommand(args):
-    for id_ in args.id:
-        matchids = args.dataprovider.matches(id_, args.statstype)
-
-        limit = args.limit if args.limit else len(matchids)
-        print(args.dataprovider.id2nick(id_))
-        print(Match.headermatches())
-        avgdata = {'mid': 0,
-            'gt': "--",
-            'gd': datetime.timedelta(),
-            'date': '',
-            'k': 0,
-            'd': 0,
-            'a': 0,
-            'kdr': 0,
-            'hero': '',
-            'wl': '-',
-            'wa': 0,
-            'ck': 0,
-            'cd': 0,
-            'gpm': 0}
-        for i in range(limit):
-            matches = args.dataprovider.fetchmatchdata([matchids[i]])
-            match = Match.creatematch(matchids[i], matches[matchids[i]])
-
-            # count average
-            if isinstance(match, Match):
-                matchdata = match.matchesdata(args.dataprovider.nick2id(id_), args.dataprovider)
-                avgdata['gd'] += matchdata['gd']
-                avgdata['k'] += matchdata['k']
-                avgdata['d'] += matchdata['d']
-                avgdata['a'] += matchdata['a']
-                avgdata['wa'] += matchdata['wa']
-                avgdata['ck'] += matchdata['ck']
-                avgdata['cd'] += matchdata['cd']
-                avgdata['gpm'] += matchdata['gpm']
-            print(match.matchesstr(args.dataprovider.nick2id(id_), args.dataprovider))
-        avgdata['gd'] = str(avgdata['gd'] / limit)[:4]
-        avgdata['k'] = int(avgdata['k'] / limit)
-        avgdata['d'] = int(avgdata['d'] / limit)
-        avgdata['a'] = int(avgdata['a'] / limit)
-        avgdata['kdr'] = avgdata['k'] / avgdata['d']
-        avgdata['wa'] = int(avgdata['wa'] / limit)
-        avgdata['ck'] = int(avgdata['ck'] / limit)
-        avgdata['cd'] = int(avgdata['cd'] / limit)
-        avgdata['gpm'] = int(avgdata['gpm'] / limit)
-        print("average   " + Match.MatchesFormat.format(**avgdata)[10:])
-        #print(json.dumps(history))
+    printoutput(args.outputobj.matchesinfo(args.id, args.statstype, args.limit))
 
 
 def matchcommand(args):
-    matches = args.dataprovider.fetchmatchdata(args.matchid)
-    for mid in args.matchid:
-        match = Match.creatematch(mid, matches[mid])
-        print(match.matchstr(args.dataprovider))
+    printoutput(args.outputobj.matchinfo(args.id))
 
 
 def playerheroesscommand(args):
-    for id_ in args.id:
-        data = args.dataprovider.fetchplayer(id_, args.statstype)
-        nickname = args.dataprovider.id2nick(int(data['account_id']))
-        player = Player(nickname, data)
-        stats = player.playerheroes(args.dataprovider, args.statstype, args.sort_by, args.order)
-
-        limit = args.limit if args.limit else len(stats)
-        print(args.dataprovider.id2nick(id_))
-        print(Player.PlayerHeroHeader)
-        for i in range(limit):
-            stat = stats[i]
-            stat['hero'] = args.dataprovider.heroid2name(stat['heroid'])[:10]
-            print(Player.PlayerHeroFormat.format(**stat))
+    printoutput(args.outputobj.playerheroesinfo(
+        args.id, args.statstype, args.sort_by, args.order, args.limit))
 
 
 def lastmatchescommand(args):
-    for id_ in args.id:
-        id_hero = (id_, args.hero) if args.hero else None
-        matchids = args.dataprovider.matches(id_, args.statstype)
-        limit = args.limit if (args.limit or args.count) < args.count else args.count
-        matches = args.dataprovider.fetchmatchdata(matchids, limit=limit, id_hero=id_hero)
-        print(args.dataprovider.id2nick(id_))
-        for mid in sorted(matches.keys(), reverse=True):
-            match = Match.creatematch(mid, matches[mid])
-            print(match.matchstr(args.dataprovider))
+    printoutput(args.outputobj.lastmatchesinfo(
+        args.id, args.statstype, args.hero, args.limit, args.count))
 
 
 def heroescommand(args):
-    heroesdata = args.dataprovider.heroes()
-    heroids = list(heroesdata.keys())
-    heroids.sort(key=int)
-    limit = args.limit if args.limit else len(heroids)
-    for heroidindex in range(limit):
-        hero = Hero(heroesdata[heroids[heroidindex]])
-        print(hero.herostr())
+    printoutput(args.outputobj.heroesinfo(args.limit))
 
 
 def main():
@@ -144,6 +67,7 @@ def main():
     parser.add_argument('-s', '--statstype', choices=['ranked', 'public', 'casual'],
                         default='ranked', help='Statstype to show')
     parser.add_argument('--config', default='/etc/honstats', help='path to configuration file')
+    parser.add_argument('-o', '--outputmode', choices=['text', 'html'], default='text', help='set output mode')
 
     subparsers = parser.add_subparsers(help='honstats commands')
     playercmd = subparsers.add_parser('player', help='Show player stats')
@@ -196,6 +120,13 @@ def main():
 
         if 'func' in args:
             args.dataprovider = HttpDataProvider(host, token=args.token, cachedir=cp.get('cache', 'directory'))
+
+            # set output class
+            if args.outputmode == 'html':
+                args.outputobj = html.Html(args.dataprovider)
+            else:
+                args.outputobj = text.Text(args.dataprovider)
+
             args.func(args)
         else:
             parser.print_help()
