@@ -91,28 +91,29 @@ class Player(object):
         matchdata = dp.fetchmatchdata(matches)
         for matchid in matchdata:
             match = Match.creatematch(matchid, matchdata[matchid])
-            heroid = int(match.playerstat(self.id(), 'hero_id'))
-            if not heroid in playerhero:
-                playerhero[heroid] = {'heroid': heroid,
-                                      'use': 0,
-                                      'k': 0,
-                                      'd': 0,
-                                      'a': 0,
-                                      'wins': 0,
-                                      'losses': 0,
-                                      'gpm': 0,
-                                      'wards': 0,
-                                      'gold': 0,
-                                      'playedtime': 0}
-            playerhero[heroid]['use'] += 1
-            playerhero[heroid]['k'] += int(match.playerstat(self.id(), 'herokills'))
-            playerhero[heroid]['d'] += int(match.playerstat(self.id(), 'deaths'))
-            playerhero[heroid]['a'] += int(match.playerstat(self.id(), 'heroassists'))
-            playerhero[heroid]['wins'] += int(match.playerstat(self.id(), 'wins'))
-            playerhero[heroid]['losses'] += int(match.playerstat(self.id(), 'losses'))
-            playerhero[heroid]['gold'] += int(match.playerstat(self.id(), 'gold'))
-            playerhero[heroid]['wards'] += int(match.playerstat(self.id(), 'wards'))
-            playerhero[heroid]['playedtime'] += match.gameduration().total_seconds()
+            if isinstance(match, Match):
+                heroid = int(match.playerstat(self.id(), 'hero_id'))
+                if not heroid in playerhero:
+                    playerhero[heroid] = {'heroid': heroid,
+                                          'use': 0,
+                                          'k': 0,
+                                          'd': 0,
+                                          'a': 0,
+                                          'wins': 0,
+                                          'losses': 0,
+                                          'gpm': 0,
+                                          'wards': 0,
+                                          'gold': 0,
+                                          'playedtime': 0}
+                playerhero[heroid]['use'] += 1
+                playerhero[heroid]['k'] += int(match.playerstat(self.id(), 'herokills'))
+                playerhero[heroid]['d'] += int(match.playerstat(self.id(), 'deaths'))
+                playerhero[heroid]['a'] += int(match.playerstat(self.id(), 'heroassists'))
+                playerhero[heroid]['wins'] += int(match.playerstat(self.id(), 'wins'))
+                playerhero[heroid]['losses'] += int(match.playerstat(self.id(), 'losses'))
+                playerhero[heroid]['gold'] += int(match.playerstat(self.id(), 'gold'))
+                playerhero[heroid]['wards'] += int(match.playerstat(self.id(), 'wards'))
+                playerhero[heroid]['playedtime'] += match.gameduration().total_seconds()
 
         # finalize stats so we can sort all values easily after
         for heroid in playerhero:
