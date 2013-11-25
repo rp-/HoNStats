@@ -46,7 +46,7 @@ class Text():
             matchids = self.dp.matches(id_, statstype)
 
             limit = limit if limit else len(matchids)
-            output = self.dp.id2nick(id_) + '\n'
+            output += self.dp.id2nick(id_) + '\n'
             output += Match.headermatches() + '\n'
             avgdata = {'mid': 0,
                        'gt': "--",
