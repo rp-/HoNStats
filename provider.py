@@ -269,8 +269,8 @@ class HttpDataProvider(DataProvider):
                 with gzip.open(matchpath, 'rt') as f:
                     matchdata = json.load(f)
             else:
-                matchdata = self.fetch('/match/summ/matchid/{id}'.format(id=matchid))
                 try:
+                    matchdata = self.fetch('/match/summ/matchid/{id}'.format(id=matchid))
                     matchstats = self.fetch('/match/all/matchid/{id}'.format(id=matchid))
                     matchdata.append(matchstats[0][0])  # settings
                     matchdata.append(matchstats[1])  # items
