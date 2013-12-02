@@ -41,7 +41,7 @@ def matchescommand(args):
 
 
 def matchcommand(args):
-    printoutput(args.outputobj.matchinfo(args.id))
+    printoutput(args.outputobj.matchinfo(args.matchid))
 
 
 def playerheroesscommand(args):

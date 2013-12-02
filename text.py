@@ -40,28 +40,58 @@ class Text():
             output += player.str() + '\n'
         return output
 
+    @classmethod
+    def initavgdata(cls):
+        avgdata = {'mid': 0,
+                   'gt': "--",
+                   'gd': datetime.timedelta(),
+                   'date': '',
+                   'k': 0,
+                   'd': 0,
+                   'a': 0,
+                   'kdr': 0,
+                   'hero': '',
+                   'wl': '-',
+                   'wa': 0,
+                   'ck': 0,
+                   'cd': 0,
+                   'gpm': 0}
+        return avgdata
+
+    @classmethod
+    def fillavgdata(cls, avgdata, matchdata):
+        avgdata['gd'] += matchdata['gd']
+        avgdata['k'] += matchdata['k']
+        avgdata['d'] += matchdata['d']
+        avgdata['a'] += matchdata['a']
+        avgdata['wa'] += matchdata['wa']
+        avgdata['ck'] += matchdata['ck']
+        avgdata['cd'] += matchdata['cd']
+        avgdata['gpm'] += matchdata['gpm']
+        return avgdata
+
+    @classmethod
+    def finalizeavgdata(cls, avgdata, limit):
+        avgdata['gd'] = str(avgdata['gd'] / limit)[:4]
+        avgdata['k'] = int(avgdata['k'] / limit)
+        avgdata['d'] = int(avgdata['d'] / limit)
+        avgdata['a'] = int(avgdata['a'] / limit)
+        avgdata['kdr'] = avgdata['k'] / avgdata['d']
+        avgdata['wa'] = int(avgdata['wa'] / limit)
+        avgdata['ck'] = int(avgdata['ck'] / limit)
+        avgdata['cd'] = int(avgdata['cd'] / limit)
+        avgdata['gpm'] = int(avgdata['gpm'] / limit)
+        return avgdata
+
+
     def matchesinfo(self, ids, statstype, limit):
         output = ''
         for id_ in ids:
             matchids = self.dp.matches(id_, statstype)
-
+            avgdata = Text.initavgdata()
             limit = limit if limit else len(matchids)
             output += self.dp.id2nick(id_) + '\n'
             output += Match.headermatches() + '\n'
-            avgdata = {'mid': 0,
-                       'gt': "--",
-                       'gd': datetime.timedelta(),
-                       'date': '',
-                       'k': 0,
-                       'd': 0,
-                       'a': 0,
-                       'kdr': 0,
-                       'hero': '',
-                       'wl': '-',
-                       'wa': 0,
-                       'ck': 0,
-                       'cd': 0,
-                       'gpm': 0}
             for i in range(limit):
                 matches = self.dp.fetchmatchdata([matchids[i]])
                 match = Match.creatematch(matchids[i], matches[matchids[i]])
@@ -69,24 +99,9 @@ class Text():
                 # count average
                 if isinstance(match, Match):
                     matchdata = match.matchesdata(self.dp.nick2id(id_), self.dp)
-                    avgdata['gd'] += matchdata['gd']
-                    avgdata['k'] += matchdata['k']
-                    avgdata['d'] += matchdata['d']
-                    avgdata['a'] += matchdata['a']
-                    avgdata['wa'] += matchdata['wa']
-                    avgdata['ck'] += matchdata['ck']
-                    avgdata['cd'] += matchdata['cd']
-                    avgdata['gpm'] += matchdata['gpm']
+                    avgdata = Text.fillavgdata(avgdata, matchdata)
                 output += match.matchesstr(self.dp.nick2id(id_), self.dp) + '\n'
-            avgdata['gd'] = str(avgdata['gd'] / limit)[:4]
-            avgdata['k'] = int(avgdata['k'] / limit)
-            avgdata['d'] = int(avgdata['d'] / limit)
-            avgdata['a'] = int(avgdata['a'] / limit)
-            avgdata['kdr'] = avgdata['k'] / avgdata['d']
-            avgdata['wa'] = int(avgdata['wa'] / limit)
-            avgdata['ck'] = int(avgdata['ck'] / limit)
-            avgdata['cd'] = int(avgdata['cd'] / limit)
-            avgdata['gpm'] = int(avgdata['gpm'] / limit)
+            avgdata = Text.finalizeavgdata(avgdata, limit)
             output += "average   " + Match.MatchesFormat.format(**avgdata)[10:] + '\n'
             #print(json.dumps(history))
         return output

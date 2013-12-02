@@ -276,7 +276,7 @@ class Match(EmptyMatch):
             'a': self.playerstat(id_, 'heroassists'),
             'kdr': self.playerstat(id_, 'herokills') / self.playerstat(id_, 'deaths')
                 if self.playerstat(id_, 'deaths') > 0 else self.playerstat(id_, 'herokills'),
-            'hero': dp.heroid2name(self.playerstat(id_, 'hero_id'))[:5],
+            'hero': dp.heroid2name(self.playerstat(id_, 'hero_id')),
             'wl': "W" if int(self.playerstat(id_, 'wins')) > 0 else "L",
             'wa': self.playerstat(id_, 'wards'),
             'ck': self.playerstat(id_, 'teamcreepkills') + self.playerstat(id_, 'neutralcreepkills'),
@@ -286,6 +286,7 @@ class Match(EmptyMatch):
     def matchesstr(self, id_, dp):
         matchesdata = self.matchesdata(id_, dp)
         matchesdata['gd'] = str(matchesdata['gd'])[:4]
+        matchesdata['hero'] = matchesdata['hero'][:5]
         return Match.MatchesFormat.format(**matchesdata)
 
     def matchstr(self, dp):
