@@ -42,7 +42,7 @@ class Html(text.Text):
 
     @classmethod
     def loadtemplates(cls):
-        with open('/opt/honstats/templates/html_header.tmpl','r') as header:
+        with open('/opt/honstats/templates/html_header.tmpl', 'r') as header:
             tmpl_header = Template(header.read())
 
         with open('/opt/honstats/templates/html_footer.tmpl', 'r') as footer:
@@ -53,10 +53,9 @@ class Html(text.Text):
     def list2cols(cls, l, _type='td'):
         ret = ''
         for i in l:
-            align = "left" if isinstance(i, str) else "right"
+            align = "left" if isinstance(i, str) or isinstance(i, LinkItem) else "right"
             ret += '<{type_} align="{align}">{item}</{type_}>'.format(item=i, type_=_type, align=align)
         return ret
-
 
     def playerinfo(self, ids, statstype):
         tmpl_header, tmpl_footer = Html.loadtemplates()
@@ -65,7 +64,8 @@ class Html(text.Text):
 
         output += '<h1>Player stats</h1>'
         output += '<table cellspacing="0" cellpadding="2">'
-        output += '<tr>' + Html.list2cols(['Nick','MMR', 'K', 'D', 'A', 'W/G', 'CD', 'KDR', 'GP', 'Wins', 'Losses', 'W%'], 'th') + '</tr>'
+        output += '<tr>' + Html.list2cols(['Nick', 'MMR', 'K', 'D', 'A', 'W/G', 'CD',
+                                           'KDR', 'GP', 'Wins', 'Losses', 'W%'], 'th') + '</tr>'
 
         for id_ in ids:
             data = self.dp.fetchplayer(id_, statstype)
@@ -97,7 +97,8 @@ class Html(text.Text):
         for id_ in ids:
             output += '<h2>{nick}</h2>'.format(nick=id_)
             output += '<table cellspacing="0" cellpadding="2">'
-            output += '<tr>' + Html.list2cols(['MID','GT', 'GD', 'Date', 'K', 'D', 'A', 'KDR', 'Hero', 'WL', 'Wards', 'CK', 'CD', 'GPM'], 'th') + '</tr>'
+            output += '<tr>' + Html.list2cols(['MID', 'GT', 'GD', 'Date', 'K', 'D', 'A', 'KDR',
+                                               'Hero', 'WL', 'Wards', 'CK', 'CD', 'GPM'], 'th') + '</tr>'
 
             matchids = self.dp.matches(id_, statstype)
             avgdata = text.Text.initavgdata()
@@ -127,5 +128,62 @@ class Html(text.Text):
                            matchdata['gpm']]
                 output += '<tr>' + Html.list2cols(rowdata) + '</tr>'
 
+            output += '</table>'
+        return output + tmpl_f.substitute()
+
+    def matchinfo(self, ids):
+        matches = self.dp.fetchmatchdata(ids)
+        tmpl_h, tmpl_f = Html.loadtemplates()
+
+        output = tmpl_h.substitute()
+
+        for mid in ids:
+            match = Match.creatematch(mid, matches[mid])
+            legionplayers = match.players(team="legion")
+            hellbourneplayers = match.players(team='hellbourne')
+
+            output += '<h2>{mid}</h2>'.format(mid=mid)
+            output += match.gamedatestr() + ' GD: ' + str(match.gameduration()) + '<br />\n'
+            output += '<table cellspacing="0" cellpadding="2">'
+            output += '<tr>'
+            output += Html.list2cols(['Legion', 'Hero', 'LVL', 'K', 'D', 'A', 'CK', 'CD', 'W', 'GPM', 'GL2D',
+                                      'Hellbourne', 'Hero', 'LVL', 'K', 'D', 'A', 'CK', 'CD', 'W', 'GPM', 'GL2D'], 'th')
+
+            legioncols = []
+            for id_ in legionplayers.keys():
+                legioncols.append([LinkItem('/player/{nick}'.format(nick=self.dp.id2nick(id_)), self.dp.id2nick(id_)),
+                                  self.dp.heroid2name(match.playerstat(id_, 'hero_id')),
+                                  match.playerstat(id_, 'level'),
+                                  match.playerstat(id_, 'herokills'),
+                                  match.playerstat(id_, 'deaths'),
+                                  match.playerstat(id_, 'heroassists'),
+                                  match.playerstat(id_, 'teamcreepkills') + match.playerstat(id_, 'neutralcreepkills'),
+                                  match.playerstat(id_, 'denies'),
+                                  match.playerstat(id_, 'wards'),
+                                  int(match.playerstat(id_, 'gold') / (match.gameduration().total_seconds() / 60)),
+                                  match.playerstat(id_, 'goldlost2death')])
+
+            hellcols = []
+            for id_ in hellbourneplayers.keys():
+                hellcols.append([LinkItem('/player/{nick}'.format(nick=self.dp.id2nick(id_)), self.dp.id2nick(id_)),
+                                self.dp.heroid2name(match.playerstat(id_, 'hero_id')),
+                                match.playerstat(id_, 'level'),
+                                match.playerstat(id_, 'herokills'),
+                                match.playerstat(id_, 'deaths'),
+                                match.playerstat(id_, 'heroassists'),
+                                match.playerstat(id_, 'teamcreepkills') + match.playerstat(id_, 'neutralcreepkills'),
+                                match.playerstat(id_, 'denies'),
+                                match.playerstat(id_, 'wards'),
+                                int(match.playerstat(id_, 'gold') / (match.gameduration().total_seconds() / 60)),
+                                match.playerstat(id_, 'goldlost2death')])
+
+            size = max(len(hellcols), len(legioncols))
+            for i in range(0, size):
+                if i < len(legioncols):
+                    output += '<tr>' + Html.list2cols(legioncols[i] + hellcols[i]) + '</tr>'
+                else:
+                    output += '<tr><td colspan="11">&nbsp;</td>' + Html.list2cols(hellcols[i]) + '</tr>'
+
+            output += '</tr>'
             output += '</table>'
         return output + tmpl_f.substitute()

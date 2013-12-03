@@ -265,6 +265,13 @@ class Match(EmptyMatch):
         date = parsedate(self.data[0]['mdt'])
         return date.astimezone(Local).isoformat(' ')[:16]
 
+    def winner(self):
+        legionplayers = self.players(team="legion")
+        if int(legionplayers[next(iter(legionplayers))]['wins']) > 0:
+            return 0
+        else:
+            return 1
+
     def matchesdata(self, id_, dp):
         matchsum = self.data[0]
         return {'mid': int(matchsum['match_id']),
@@ -356,6 +363,7 @@ class Match(EmptyMatch):
 
     def __repr__(self):
         return json.dumps(self.data, indent=2)
+
 
 class Hero():
     heroformat = "{heroid:>3s} {name:15s}"

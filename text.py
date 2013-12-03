@@ -83,7 +83,6 @@ class Text():
         avgdata['gpm'] = int(avgdata['gpm'] / limit)
         return avgdata
 
-
     def matchesinfo(self, ids, statstype, limit):
         output = ''
         for id_ in ids:
