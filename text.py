@@ -88,7 +88,7 @@ class Text():
         for id_ in ids:
             matchids = self.dp.matches(id_, statstype)
             avgdata = Text.initavgdata()
-            limit = limit if limit else len(matchids)
+            limit = min(limit, len(matchids)) if limit else len(matchids)
             output += self.dp.id2nick(id_) + '\n'
             output += Match.headermatches() + '\n'
             for i in range(limit):
